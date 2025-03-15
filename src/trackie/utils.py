@@ -1,0 +1,74 @@
+from collections.abc import Generator, Sequence
+import datetime as dt
+
+from .ansi_colors import GREEN, RED, RESET
+from .work.models import DayStat, WeekStat
+
+
+def daterange(
+    start_date: dt.date,
+    end_date: dt.date | None = None,
+    excluded_weekdays: Sequence[int] | None = None
+) -> Generator[dt.date]:
+    """
+    Generate a sequence of datetime date objects between two dates
+
+    Start_date is inclusive while end_date is not, mimicking range behavior.
+    If end_date is omitted the resulting sequence includes today.
+    """
+    if end_date is None:
+        end_date = dt.date.today() + dt.timedelta(days=1)
+
+    days = (end_date - start_date).days
+    for n in range(days):
+        day = start_date + dt.timedelta(n)
+        if excluded_weekdays:
+            if day.weekday() in excluded_weekdays:
+                continue
+        yield day
+
+
+def daterange_from_week(
+    year: int,
+    week: int,
+    exclude_weekend: bool = False,
+) -> tuple[dt.date, dt.date]:
+    """
+    Computes first and last day of given week
+
+    First day is Monday (1), last is Sunday (0)
+    If exclude_weekend is True last_day is Friday (5)
+    """
+    first_day_of_week = dt.datetime.strptime(f'{year}-{week-1}-1', "%Y-%W-%w").date()
+    days_delta = 4 if exclude_weekend else 6
+    last_day_of_week = first_day_of_week + dt.timedelta(days=days_delta)
+    return first_day_of_week, last_day_of_week
+
+
+def print_pretty_day_stats(day_stats: Sequence[DayStat], minutes_per_day: int) -> None:
+    for day_stat in day_stats:
+        print(
+            f'Date {day_stat.date}: ',
+            f'{GREEN}{(day_stat.minutes // 10) * "="}{RESET}',
+            f'{day_stat.minutes} from {minutes_per_day}'
+        )
+    carryover = day_stats[-1].carryover
+    print(
+        f'Current status: {GREEN if carryover >= 0 else RED}'
+        f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
+    )
+
+
+def print_pretty_week_stats(week_stats: Sequence[WeekStat], minutes_per_week: int) -> None:
+    for week_stat in week_stats:
+        first_day, last_day = daterange_from_week(2025, week_stat.week)
+        print(
+            f'Week Number {week_stat.week}, {first_day} - {last_day}: ',
+            f'{GREEN}{(week_stat.minutes // 30) * "="}{RESET}',
+            f'{week_stat.minutes} from {minutes_per_week}'
+        )
+    carryover = week_stats[-1].carryover
+    print(
+        f'Current Status: {GREEN if carryover >= 0 else RED}'
+        f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
+    )

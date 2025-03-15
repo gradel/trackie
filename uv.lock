@@ -1,6 +1,6 @@
 version = 1
 revision = 1
-requires-python = ">=3.13"
+requires-python = "==3.13.*"
 
 [[package]]
 name = "asttokens"
@@ -291,7 +291,9 @@ wheels = [
 name = "trackie"
 version = "0.1.0"
 source = { virtual = "." }
-dependencies = [
+
+[package.dev-dependencies]
+dev = [
     { name = "ipython" },
     { name = "mypy" },
     { name = "pdbpp" },
@@ -299,7 +301,9 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [
+
+[package.metadata.requires-dev]
+dev = [
     { name = "ipython", specifier = ">=9.0.2" },
     { name = "mypy", specifier = ">=1.15.0" },
     { name = "pdbpp", specifier = ">=0.10.3" },
