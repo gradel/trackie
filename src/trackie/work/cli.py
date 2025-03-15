@@ -1,21 +1,21 @@
 import datetime as dt
 from pathlib import Path
 
-from src.trackie.work.stats import (
+from trackie.work.stats import (
     get_daily_stats,
     get_weekly_stats,
     get_lines,
     get_work_units,
 )
-from src.trackie.utils import print_pretty_day_stats, print_pretty_week_stats
-from src.trackie.work.conf import (
+from trackie.utils import print_pretty_day_stats, print_pretty_week_stats
+from trackie.work.conf import (
     MINUTES_PER_DAY,
     MINUTES_PER_WEEK,
     VIM_OTL_FILEPATH,
 )
 
 
-if __name__ == "__main__":
+def main():
     start_date = dt.date(2025, 3, 3)
     #  end_date = dt.date(2025, 3, 4)
 
