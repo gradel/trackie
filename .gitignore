@@ -8,5 +8,3 @@ wheels/
 
 # Virtual environments
 .venv
-
-src/trackie/work/conf.py

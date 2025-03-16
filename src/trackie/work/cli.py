@@ -8,7 +8,7 @@ from trackie.work.stats import (
     get_work_units,
 )
 from trackie.utils import print_pretty_day_stats, print_pretty_week_stats
-from trackie.work.conf import (
+from trackie.conf import (
     MINUTES_PER_DAY,
     MINUTES_PER_WEEK,
     VIM_OTL_FILEPATH,

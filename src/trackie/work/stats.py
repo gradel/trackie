@@ -4,7 +4,7 @@ import datetime as dt
 from pathlib import Path
 
 from ..utils import daterange
-from .conf import VIM_OTL_FILEPATH, MINUTES_PER_WEEK, MINUTES_PER_DAY
+from trackie.conf import VIM_OTL_FILEPATH, MINUTES_PER_WEEK, MINUTES_PER_DAY
 from .models import WorkUnit, WeekStat, DayStat
 
 
