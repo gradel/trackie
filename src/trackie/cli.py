@@ -17,12 +17,19 @@ def run(
     start: str | None = None,
     interval: str | None = 'week',
 ):
+    """
+    Display work time statistics.
+    """
+
     config = get_config()
 
     if start is None:
-        start_date = dt.date(2025, 3, 3)
+        start_date = config.start_date
+        if start is None:
+            today = dt.date.today()
+            start_date = dt.date(year=today.year, month=today.month, day=1)
     else:
-        start_date = dt.datetime.strptime(start, '%d.%m.%Y').date()
+        start_date = dt.datetime.strptime(start, '%Y-%m-%d').date()
 
     lines = get_lines(Path(config.vim_otl_filepath))
     work_units = get_work_units(lines, start_date=start_date)

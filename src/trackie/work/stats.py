@@ -94,23 +94,23 @@ def get_weekly_stats(
     if not end_date:
         end_date = dt.date.today() + dt.timedelta(days=1)
 
-    # aggregate work on weeks
+    # aggregate work over weeks
     work_per_week: dict[int, int] = defaultdict(int)
     for work_unit in work_units:
         day = work_unit.date
         week = day.isocalendar()[1]
-        work_per_week[week] += work_unit.minutes
+        work_per_week[(work_unit.date.year, week)] += work_unit.minutes
 
     week_stats = []
     carryover = 0
-    for index, (week, minutes) in enumerate(work_per_week.items()):
+    for index, ((year, week), minutes) in enumerate(work_per_week.items()):
         if index == 0:
             diff = carryover = minutes - config.minutes_per_week
-            week_stat = WeekStat(week, minutes, diff, diff)
+            week_stat = WeekStat(year, week, minutes, diff, diff)
             week_stats.append(week_stat)
         else:
             carryover = minutes + carryover - config.minutes_per_week
             diff = minutes - config.minutes_per_week
-            week_stat = WeekStat(week, minutes, diff, carryover)
+            week_stat = WeekStat(year, week, minutes, diff, carryover)
             week_stats.append(week_stat)
     return week_stats

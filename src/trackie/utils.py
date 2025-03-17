@@ -4,6 +4,10 @@ import datetime as dt
 from .ansi_colors import GREEN, RED, RESET
 from .work.models import DayStat, WeekStat
 
+from rich.console import Console
+from rich.table import Table
+import typer
+
 
 def daterange(
     start_date: dt.date,
@@ -59,7 +63,7 @@ def print_pretty_day_stats(day_stats: Sequence[DayStat], minutes_per_day: int) -
     )
 
 
-def print_pretty_week_stats(week_stats: Sequence[WeekStat], minutes_per_week: int) -> None:
+def print_pretty_week_stats_simple(week_stats: Sequence[WeekStat], minutes_per_week: int) -> None:
     for week_stat in week_stats:
         first_day, last_day = daterange_from_week(2025, week_stat.week)
         print(
@@ -67,6 +71,48 @@ def print_pretty_week_stats(week_stats: Sequence[WeekStat], minutes_per_week: in
             f'{GREEN}{(week_stat.minutes // 30) * "="}{RESET}',
             f'{week_stat.minutes} from {minutes_per_week}'
         )
+    carryover = week_stats[-1].carryover
+    print(
+        f'Current Status: {GREEN if carryover >= 0 else RED}'
+        f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
+    )
+
+
+def print_pretty_week_stats(week_stats: Sequence[WeekStat], minutes_per_week: int) -> None:
+    console = Console()
+    table = Table("Week", "Minutes")
+    for week_stat in week_stats:
+        first_day, last_day = daterange_from_week(week_stat.year, week_stat.week)
+        parts = []
+        hours_per_week = minutes_per_week // 60
+        if week_stat.minutes >= minutes_per_week:
+            parts.append(typer.style(
+                f'{(minutes_per_week // 60) * "="}',
+                fg=typer.colors.WHITE,
+            ))
+            hours_exceed = (week_stat.minutes - minutes_per_week) // 60
+            if hours_exceed:
+                parts.append(typer.style(
+                    f'{hours_exceed * "="}',
+                    fg=typer.colors.GREEN,
+                ))
+        else:
+            hours_done = week_stat.minutes // 60
+            parts.append(typer.style(
+                f'{hours_done * "="}',
+                fg=typer.colors.WHITE,
+            ))
+            if hours_done < hours_per_week:
+                parts.append(typer.style(
+                    f'{(hours_per_week - hours_done) * "="}',
+                    fg=typer.colors.RED,
+                ))
+        parts.append(f' {week_stat.minutes} from {minutes_per_week}')
+        table.add_row(
+            f'Week Number {week_stat.week}, {first_day} - {last_day}: ',
+            ''.join(parts)
+        )
+    console.print(table)
     carryover = week_stats[-1].carryover
     print(
         f'Current Status: {GREEN if carryover >= 0 else RED}'

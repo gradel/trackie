@@ -21,6 +21,7 @@ class DayStat:
 
 @dataclass
 class WeekStat:
+    year: int
     week: int
     minutes: int
     diff: int
