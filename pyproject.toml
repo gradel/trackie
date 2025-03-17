@@ -20,7 +20,7 @@ dev = [
 package = true
 
 [project.scripts]
-wtrack = "trackie.work.cli:main"
+wtrack = "trackie.cli:main"
 
 # [build-system]
 # requires = ["uv"]
