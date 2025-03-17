@@ -17,12 +17,12 @@ def get_config():
     config_file = home / '.trackie.toml'
     with config_file.open('rb') as f:
         cfg = tomllib.load(f)
-        env_minutes_per_day = os.environ.get('TRACKIE_MINUTES_PER_DAY')
+        env_minutes_per_day = os.getenv('TRACKIE_MINUTES_PER_DAY')
         if env_minutes_per_day:
             minutes_per_day = int(env_minutes_per_day)
         else:
             minutes_per_day = cfg['minutes_per_day']
-        env_minutes_per_week = os.environ.get('TRACKIE_MINUTES_PER_WEEK')
+        env_minutes_per_week = os.getenv('TRACKIE_MINUTES_PER_WEEK')
         if env_minutes_per_week:
             minutes_per_week = int(env_minutes_per_week)
         else:
