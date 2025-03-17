@@ -4,11 +4,8 @@ import datetime as dt
 from pathlib import Path
 
 from ..utils import daterange
-from trackie.conf import VIM_OTL_FILEPATH, MINUTES_PER_WEEK, MINUTES_PER_DAY
+from trackie.conf import get_config
 from .models import WorkUnit, WeekStat, DayStat
-
-
-WORK_FILE = Path(VIM_OTL_FILEPATH)
 
 
 def get_lines(path: Path) -> Generator[str]:
@@ -60,6 +57,8 @@ def get_daily_stats(
     excluded_weekdays: Sequence[int] | None = None,
 ) -> Sequence[DayStat]:
 
+    config = get_config()
+
     if not end_date:
         end_date = dt.date.today() + dt.timedelta(days=1)
 
@@ -70,16 +69,15 @@ def get_daily_stats(
 
     day_stats = []
     carryover = 0
-    # for index, (date, minutes) in enumerate(work_per_day.items()):
     for date in daterange(start_date, end_date, excluded_weekdays=excluded_weekdays):
         minutes = work_per_day.get(date, 0)
         if date == start_date:
-            diff = carryover = minutes - MINUTES_PER_DAY
+            diff = carryover = minutes - config.minutes_per_day
             day_stat = DayStat(date, minutes, diff, diff)
             day_stats.append(day_stat)
         else:
-            carryover = minutes + carryover - MINUTES_PER_DAY
-            diff = minutes - MINUTES_PER_DAY
+            carryover = minutes + carryover - config.minutes_per_day
+            diff = minutes - config.minutes_per_day
             day_stat = DayStat(date, minutes, diff, carryover)
             day_stats.append(day_stat)
     return day_stats
@@ -90,6 +88,8 @@ def get_weekly_stats(
     start_date: dt.date,
     end_date: dt.date | None = None,
 ) -> Sequence[WeekStat]:
+
+    config = get_config()
 
     if not end_date:
         end_date = dt.date.today() + dt.timedelta(days=1)
@@ -105,12 +105,12 @@ def get_weekly_stats(
     carryover = 0
     for index, (week, minutes) in enumerate(work_per_week.items()):
         if index == 0:
-            diff = carryover = minutes - MINUTES_PER_WEEK
+            diff = carryover = minutes - config.minutes_per_week
             week_stat = WeekStat(week, minutes, diff, diff)
             week_stats.append(week_stat)
         else:
-            carryover = minutes + carryover - MINUTES_PER_WEEK
-            diff = minutes - MINUTES_PER_WEEK
+            carryover = minutes + carryover - config.minutes_per_week
+            diff = minutes - config.minutes_per_week
             week_stat = WeekStat(week, minutes, diff, carryover)
             week_stats.append(week_stat)
     return week_stats

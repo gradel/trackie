@@ -8,18 +8,15 @@ from trackie.work.stats import (
     get_work_units,
 )
 from trackie.utils import print_pretty_day_stats, print_pretty_week_stats
-from trackie.conf import (
-    MINUTES_PER_DAY,
-    MINUTES_PER_WEEK,
-    VIM_OTL_FILEPATH,
-)
+from trackie.conf import get_config
 
 
 def main():
-    start_date = dt.date(2025, 3, 3)
-    #  end_date = dt.date(2025, 3, 4)
+    config = get_config()
 
-    lines = get_lines(Path(VIM_OTL_FILEPATH))
+    start_date = dt.date(2025, 3, 3)
+
+    lines = get_lines(Path(config.vim_otl_filepath))
     work_units = get_work_units(lines, start_date=start_date)
 
     weekly_stats = get_weekly_stats(
@@ -28,9 +25,9 @@ def main():
        #  end_date=end_date,
     )
     #  print('Weekly Stats: ', weekly_stats)
-    print_pretty_week_stats(weekly_stats, MINUTES_PER_WEEK)
+    print_pretty_week_stats(weekly_stats, config.minutes_per_week)
 
-    lines = get_lines(Path(VIM_OTL_FILEPATH))
+    lines = get_lines(Path(config.vim_otl_filepath))
     work_units = get_work_units(lines, start_date=start_date)
     #  print(list(work_units))
 
@@ -41,4 +38,4 @@ def main():
         excluded_weekdays=[5, 6]
     )
     #  print('Daily Stats: ', daily_stats)
-    print_pretty_day_stats(daily_stats, MINUTES_PER_DAY)
+    print_pretty_day_stats(daily_stats, config.minutes_per_day)

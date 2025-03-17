@@ -1,7 +1,20 @@
 import datetime as dt
-# import pytest
+import os
 
-from trackie.work.stats import get_work_units
+from trackie.work.stats import get_work_units, get_daily_stats
+
+
+def test_get_daily_stats(single_work_unit):
+
+    os.environ['TRACKIE_MINUTES_PER_DAY'] = '1'
+    start_date = dt.date(2025, 1, 10)
+    end_date = dt.date(2025, 1, 11)
+    daily_stats = get_daily_stats(
+        single_work_unit, start_date=start_date, end_date=end_date)
+    assert len(daily_stats) == 1
+    day_stat = daily_stats[0]
+    assert day_stat.minutes == 1
+    assert day_stat.diff == 0
 
 
 def test_empty_file():
