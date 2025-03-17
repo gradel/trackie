@@ -19,7 +19,7 @@ def test_get_daily_stats(single_work_unit):
 
 def test_empty_file():
     lines = []
-    assert list(get_work_units(lines, start_date=dt.date(2000, 1, 1))) == []
+    assert list(get_work_units(lines, 'client', start_date=dt.date(2000, 1, 1))) == []
 
 
 def test_one_work_unit():
@@ -28,7 +28,7 @@ def test_one_work_unit():
         '\tcompany',
         '\t\tTask 1: 5',
     ]
-    work_units = list(get_work_units(lines, start_date=dt.date(2025, 3, 1)))
+    work_units = list(get_work_units(lines, 'client', start_date=dt.date(2025, 3, 1)))
     assert len(work_units) == 1
     work_unit = work_units[0]
     assert work_unit.date.year == 2025
@@ -57,6 +57,7 @@ def test_four_days_exclude_outer():
     ]
     work_units = list(get_work_units(
         lines,
+        'client',
         start_date=day_after_first_date,
         end_date=day_before_last_date
     ))

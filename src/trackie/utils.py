@@ -65,7 +65,7 @@ def print_pretty_day_stats(day_stats: Sequence[DayStat], minutes_per_day: int) -
 
 def print_pretty_week_stats_simple(week_stats: Sequence[WeekStat], minutes_per_week: int) -> None:
     for week_stat in week_stats:
-        first_day, last_day = daterange_from_week(2025, week_stat.week)
+        first_day, last_day = daterange_from_week(2025, week_stat.week, exclude_weekend=True)
         print(
             f'Week Number {week_stat.week}, {first_day} - {last_day}: ',
             f'{GREEN}{(week_stat.minutes // 30) * "="}{RESET}',
@@ -78,11 +78,16 @@ def print_pretty_week_stats_simple(week_stats: Sequence[WeekStat], minutes_per_w
     )
 
 
-def print_pretty_week_stats(week_stats: Sequence[WeekStat], minutes_per_week: int) -> None:
+def print_pretty_week_stats(
+    client: str,
+    week_stats: Sequence[WeekStat],
+    minutes_per_week: int,
+) -> None:
     console = Console()
-    table = Table("Week", "Minutes")
+    table = Table("Week", "Minutes", title=client.capitalize())
     for week_stat in week_stats:
-        first_day, last_day = daterange_from_week(week_stat.year, week_stat.week)
+        first_day, last_day = daterange_from_week(
+            week_stat.year, week_stat.week, exclude_weekend=True)
         parts = []
         hours_per_week = minutes_per_week // 60
         if week_stat.minutes >= minutes_per_week:
@@ -115,6 +120,6 @@ def print_pretty_week_stats(week_stats: Sequence[WeekStat], minutes_per_week: in
     console.print(table)
     carryover = week_stats[-1].carryover
     print(
-        f'Current Status: {GREEN if carryover >= 0 else RED}'
+        f'Current Balance: {GREEN if carryover >= 0 else RED}'
         f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
     )

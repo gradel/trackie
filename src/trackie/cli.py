@@ -14,6 +14,7 @@ from trackie.conf import get_config
 
 
 def run(
+    client: str | None = None,
     start: str | None = None,
     interval: str | None = 'week',
 ):
@@ -31,8 +32,14 @@ def run(
     else:
         start_date = dt.datetime.strptime(start, '%Y-%m-%d').date()
 
+    if client is None:
+        client = config.client
+        if client is None:
+            print('No client given')
+            return
+
     lines = get_lines(Path(config.vim_otl_filepath))
-    work_units = get_work_units(lines, start_date=start_date)
+    work_units = get_work_units(lines, client, start_date=start_date)
 
     if interval == 'week':
         weekly_stats = get_weekly_stats(
@@ -41,7 +48,7 @@ def run(
         #  end_date=end_date,
         )
         #  print('Weekly Stats: ', weekly_stats)
-        print_pretty_week_stats(weekly_stats, config.minutes_per_week)
+        print_pretty_week_stats(client, weekly_stats, config.minutes_per_week)
 
     elif interval == 'day':
         daily_stats = get_daily_stats(

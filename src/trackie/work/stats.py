@@ -18,6 +18,7 @@ def get_lines(path: Path) -> Generator[str]:
 
 def get_work_units(
     lines: Generator[str],
+    client: str,
     start_date: dt.date,
     end_date: dt.date | None = None,
 ) -> Generator[WorkUnit]:
@@ -42,12 +43,13 @@ def get_work_units(
                 not_in_range = False
             continue
         if line.startswith('\t') and not line.startswith('\t\t'):
-            client = line.strip()
+            _client = line.strip()
             continue
         if not_in_range is False:
             minutes = int(line.rsplit(':', 1)[1].strip())
             work_unit = WorkUnit(date, client, minutes)
-            yield work_unit
+            if work_unit.client.lower() == client.lower():
+                yield work_unit
 
 
 def get_daily_stats(
@@ -95,7 +97,7 @@ def get_weekly_stats(
         end_date = dt.date.today() + dt.timedelta(days=1)
 
     # aggregate work over weeks
-    work_per_week: dict[int, int] = defaultdict(int)
+    work_per_week: dict[tuple[int, int], int] = defaultdict(int)
     for work_unit in work_units:
         day = work_unit.date
         week = day.isocalendar()[1]
