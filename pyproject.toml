@@ -24,7 +24,7 @@ wtrack = "trackie.work.cli:main"
 # requires = ["uv"]
 # build-backend = "uv"
 
-[tool.pytest.ini_options]
-pythonpath = [
-    "src"
-]
+# [tool.pytest.ini_options]
+# pythonpath = [
+#     "src"
+# ]
