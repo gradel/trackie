@@ -26,7 +26,8 @@ def test_one_work_unit():
     lines = [
         '2025-03-01',
         '\tcompany',
-        '\t\tTask 1: 5',
+        '\t\tTask 1',
+        '\t\t\t5'
     ]
     work_units = list(get_work_units(lines, 'client', start_date=dt.date(2025, 3, 1)))
     assert len(work_units) == 1
@@ -44,16 +45,20 @@ def test_four_days_exclude_outer():
     lines = [
         first_date.strftime('%Y-%m-%d'),
         '\tcompany',
-        '\t\tTask 1: 5',
+        '\t\tTask 1',
+        '\t\t\t5',
         '2025-03-05',
         '\tcompany',
-        '\t\tTask 2: 10',
+        '\t\tTask 2',
+        '\t\t\t10',
         '2025-03-10',
         '\tcompany',
-        '\t\tTask 3: 20',
+        '\t\tTask 3',
+        '\t\t\t20',
         last_date.strftime('%Y-%m-%d'),
         '\tcompany',
-        '\t\tTask 4: 30',
+        '\t\tTask 4',
+        '\t\t\t30',
     ]
     work_units = list(get_work_units(
         lines,

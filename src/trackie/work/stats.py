@@ -2,10 +2,16 @@ from collections import defaultdict
 from collections.abc import Generator, Sequence
 import datetime as dt
 from pathlib import Path
+import re
 
 from ..utils import daterange
 from trackie.conf import get_config
 from .models import WorkUnit, WeekStat, DayStat
+
+date_pattern = re.compile(r'^[^\t].*')
+client_pattern = re.compile(r'^\t[^\t].*')
+description_pattern = re.compile(r'^\t\t[^\t].*')
+duration_pattern = re.compile(r'^\t\t\t[^\t].*')
 
 
 def get_lines(path: Path) -> Generator[str]:
@@ -30,23 +36,20 @@ def get_work_units(
     not_in_range = False
 
     for line in lines:
-        if not line.startswith('\t'):
+        if date_pattern.match(line):
             date_str = line.strip()
             date = dt.datetime.strptime(date_str, "%Y-%m-%d").date()
-            if (
-                start_date and date < start_date
-            ) or (
-                end_date and date > end_date
-            ):
-                not_in_range = True
-            else:
-                not_in_range = False
+            not_in_range = True if date < start_date or date > end_date else False
             continue
-        if line.startswith('\t') and not line.startswith('\t\t'):
+        elif client_pattern.match(line):
+            if not_in_range:
+                continue
             _client = line.strip()
             continue
-        if not_in_range is False:
-            minutes = int(line.rsplit(':', 1)[1].strip())
+        elif description_pattern.match(line):
+            continue
+        elif duration_pattern.match(line) and not_in_range is False:
+            minutes = int(line.strip())
             work_unit = WorkUnit(date, client, minutes)
             if work_unit.client.lower() == client.lower():
                 yield work_unit

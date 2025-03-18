@@ -114,7 +114,7 @@ def print_pretty_week_stats(
                 ))
         parts.append(f' {week_stat.minutes} from {minutes_per_week}')
         table.add_row(
-            f'Week Number {week_stat.week}, {first_day} - {last_day}: ',
+            f'Week Number {week_stat.week}, {first_day} - {last_day}',
             ''.join(parts)
         )
     console.print(table)
