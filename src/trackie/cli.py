@@ -9,7 +9,7 @@ from trackie.work.stats import (
     get_lines,
     get_work_units,
 )
-from trackie.utils import print_pretty_day_stats, print_pretty_week_stats
+from trackie.utils import pretty_print_day_stats, pretty_print_week_stats
 from trackie.conf import get_config
 
 
@@ -48,7 +48,7 @@ def run(
         #  end_date=end_date,
         )
         #  print('Weekly Stats: ', weekly_stats)
-        print_pretty_week_stats(client, weekly_stats, config.minutes_per_week)
+        pretty_print_week_stats(client, weekly_stats, config.minutes_per_week)
 
     elif interval == 'day':
         daily_stats = get_daily_stats(
@@ -58,7 +58,7 @@ def run(
             excluded_weekdays=[5, 6]
         )
         #  print('Daily Stats: ', daily_stats)
-        print_pretty_day_stats(daily_stats, config.minutes_per_day)
+        pretty_print_day_stats(daily_stats, config.minutes_per_day)
 
 
 def main():

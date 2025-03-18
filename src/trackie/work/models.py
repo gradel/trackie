@@ -7,6 +7,7 @@ class WorkUnit:
     date: dt.date
     client: str
     minutes: int
+    description: str
     start: dt.datetime | None = None
     end: dt.datetime | None = None
 

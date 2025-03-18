@@ -49,7 +49,7 @@ def daterange_from_week(
     return first_day_of_week, last_day_of_week
 
 
-def print_pretty_day_stats(day_stats: Sequence[DayStat], minutes_per_day: int) -> None:
+def pretty_print_day_stats(day_stats: Sequence[DayStat], minutes_per_day: int) -> None:
     for day_stat in day_stats:
         print(
             f'Date {day_stat.date}: ',
@@ -63,22 +63,7 @@ def print_pretty_day_stats(day_stats: Sequence[DayStat], minutes_per_day: int) -
     )
 
 
-def print_pretty_week_stats_simple(week_stats: Sequence[WeekStat], minutes_per_week: int) -> None:
-    for week_stat in week_stats:
-        first_day, last_day = daterange_from_week(2025, week_stat.week, exclude_weekend=True)
-        print(
-            f'Week Number {week_stat.week}, {first_day} - {last_day}: ',
-            f'{GREEN}{(week_stat.minutes // 30) * "="}{RESET}',
-            f'{week_stat.minutes} from {minutes_per_week}'
-        )
-    carryover = week_stats[-1].carryover
-    print(
-        f'Current Status: {GREEN if carryover >= 0 else RED}'
-        f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
-    )
-
-
-def print_pretty_week_stats(
+def pretty_print_week_stats(
     client: str,
     week_stats: Sequence[WeekStat],
     minutes_per_week: int,

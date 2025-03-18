@@ -47,10 +47,11 @@ def get_work_units(
             _client = line.strip()
             continue
         elif description_pattern.match(line):
+            description = line.strip()
             continue
         elif duration_pattern.match(line) and not_in_range is False:
             minutes = int(line.strip())
-            work_unit = WorkUnit(date, client, minutes)
+            work_unit = WorkUnit(date, client, minutes, description)
             if work_unit.client.lower() == client.lower():
                 yield work_unit
 
