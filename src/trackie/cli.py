@@ -26,7 +26,7 @@ def run(
 
     if start is None:
         start_date = config.start_date
-        if start is None:
+        if start_date is None:
             today = dt.date.today()
             start_date = dt.date(year=today.year, month=today.month, day=1)
     else:
@@ -43,9 +43,9 @@ def run(
 
     if interval == 'week':
         weekly_stats = get_weekly_stats(
-        work_units=work_units,
-        start_date=start_date,
-        #  end_date=end_date,
+            work_units=work_units,
+            start_date=start_date,
+            #  end_date=end_date,
         )
         #  print('Weekly Stats: ', weekly_stats)
         pretty_print_week_stats(client, weekly_stats, config.minutes_per_week)

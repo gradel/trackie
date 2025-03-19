@@ -49,6 +49,21 @@ def daterange_from_week(
     return first_day_of_week, last_day_of_week
 
 
+def weeks_from_dates(start_date: dt.date, end_date: dt.date) -> tuple[int, int]:
+    start_week = start_date.isocalendar()[1]
+    weeks = [start_week]
+    check_date = start_date
+    while check_date.year == start_date.year:
+        if check_date < end_date:
+            weeks.append(check_date.isocalendar()[1])
+            check_date = check_date + dt.timedelta(days=7)
+        else:
+            break
+    if weeks[-1] == 1:
+        weeks.pop()
+    return weeks
+
+
 def pretty_print_day_stats(day_stats: Sequence[DayStat], minutes_per_day: int) -> None:
     for day_stat in day_stats:
         print(

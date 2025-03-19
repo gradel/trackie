@@ -4,7 +4,7 @@ import datetime as dt
 from pathlib import Path
 import re
 
-from ..utils import daterange
+from ..utils import daterange, weeks_from_dates
 from trackie.conf import get_config
 from .models import WorkUnit, WeekStat, DayStat
 
@@ -14,16 +14,16 @@ description_pattern = re.compile(r'^\t\t[^\t].*')
 duration_pattern = re.compile(r'^\t\t\t[^\t].*')
 
 
-def get_lines(path: Path) -> Generator[str]:
+def get_lines(path: Path) -> Generator[tuple[int, str]]:
     with path.open() as f:
         lines = f.readlines()
-        for line in lines:
+        for line_number, line in enumerate(lines):
             if line.strip():
-                yield line
+                yield line_number, line
 
 
 def get_work_units(
-    lines: Generator[str],
+    lines: Generator[tuple[int, str]],
     client: str,
     start_date: dt.date,
     end_date: dt.date | None = None,
@@ -35,7 +35,7 @@ def get_work_units(
     # date filter flag
     not_in_range = False
 
-    for line in lines:
+    for (line_number, line) in lines:
         if date_pattern.match(line):
             date_str = line.strip()
             date = dt.datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -48,10 +48,11 @@ def get_work_units(
             continue
         elif description_pattern.match(line):
             description = line.strip()
+            description_line_number = line_number
             continue
         elif duration_pattern.match(line) and not_in_range is False:
             minutes = int(line.strip())
-            work_unit = WorkUnit(date, client, minutes, description)
+            work_unit = WorkUnit(date, client, minutes, description, description_line_number)
             if work_unit.client.lower() == client.lower():
                 yield work_unit
 
@@ -100,12 +101,24 @@ def get_weekly_stats(
     if not end_date:
         end_date = dt.date.today() + dt.timedelta(days=1)
 
+    weeks_to_report = weeks_from_dates(start_date, end_date)
+
     # aggregate work over weeks
     work_per_week: dict[tuple[int, int], int] = defaultdict(int)
     for work_unit in work_units:
         day = work_unit.date
         week = day.isocalendar()[1]
         work_per_week[(work_unit.date.year, week)] += work_unit.minutes
+
+    year = start_date.year
+    weeks = [year_and_week[1] for year_and_week in work_per_week.keys()]
+    for week in weeks_to_report:
+        if week not in weeks and (
+            week <= end_date.isocalendar()[1]
+            or week >= start_date.isocalendar()[1]
+        ):
+            work_per_week[(year, week)] = 0
+
 
     week_stats = []
     carryover = 0
@@ -119,4 +132,4 @@ def get_weekly_stats(
             diff = minutes - config.minutes_per_week
             week_stat = WeekStat(year, week, minutes, diff, carryover)
             week_stats.append(week_stat)
-    return week_stats
+    return sorted(week_stats, key=lambda week_stat: week_stat.week)

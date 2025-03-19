@@ -8,6 +8,7 @@ class WorkUnit:
     client: str
     minutes: int
     description: str
+    description_line_number: int | None = None
     start: dt.datetime | None = None
     end: dt.datetime | None = None
 
