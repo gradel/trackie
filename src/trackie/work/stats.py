@@ -4,7 +4,7 @@ import datetime as dt
 from pathlib import Path
 import re
 
-from ..utils import daterange, weeks_from_dates
+from ..utils import daterange, get_week_range
 from trackie.conf import get_config
 from .models import WorkUnit, WeekStat, DayStat
 
@@ -101,7 +101,7 @@ def get_weekly_stats(
     if not end_date:
         end_date = dt.date.today() + dt.timedelta(days=1)
 
-    weeks_to_report = weeks_from_dates(start_date, end_date)
+    weeks_to_report = get_week_range(start_date, end_date)
 
     # aggregate work over weeks
     work_per_week: dict[tuple[int, int], int] = defaultdict(int)
@@ -113,12 +113,8 @@ def get_weekly_stats(
     year = start_date.year
     weeks = [year_and_week[1] for year_and_week in work_per_week.keys()]
     for week in weeks_to_report:
-        if week not in weeks and (
-            week <= end_date.isocalendar()[1]
-            or week >= start_date.isocalendar()[1]
-        ):
+        if week not in weeks:
             work_per_week[(year, week)] = 0
-
 
     week_stats = []
     carryover = 0
