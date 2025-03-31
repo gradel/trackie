@@ -9,9 +9,8 @@ from trackie.conf import get_config
 from .models import WorkUnit, WeekStat, DayStat
 
 date_pattern = re.compile(r'^[^\t].*')
-client_pattern = re.compile(r'^\t[^\t].*')
-description_pattern = re.compile(r'^\t\t[^\t].*')
-duration_pattern = re.compile(r'^\t\t\t[^\t].*')
+description_pattern = re.compile(r'^\t[^\t].*')
+duration_pattern = re.compile(r'^\t\t.*')
 
 
 def get_lines(path: Path) -> Generator[tuple[int, str]]:
@@ -40,11 +39,6 @@ def get_work_units(
             date_str = line.strip()
             date = dt.datetime.strptime(date_str, "%Y-%m-%d").date()
             not_in_range = True if date < start_date or date > end_date else False
-            continue
-        elif client_pattern.match(line):
-            if not_in_range:
-                continue
-            _client = line.strip()
             continue
         elif description_pattern.match(line):
             description = line.strip()

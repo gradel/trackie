@@ -9,9 +9,9 @@ import tomllib
 class Config:
     minutes_per_day: int
     minutes_per_week: int
-    vim_otl_filepath: str
+    clients: dict[str, str]
     start_date: dt.date | None = None
-    client: str | None = None
+    abbr: dict[str, str] | None = None
 
 
 def get_config():
@@ -19,10 +19,6 @@ def get_config():
     config_file = home / '.trackie.toml'
     with config_file.open('rb') as f:
         cfg = tomllib.load(f)
-
-    client = os.getenv('TRACKIE_CLIENT')
-    if not client:
-        client = cfg.get('client')
 
     env_minutes_per_day = os.getenv('TRACKIE_MINUTES_PER_DAY')
     if env_minutes_per_day:
@@ -43,10 +39,10 @@ def get_config():
         start_date = cfg.get('start_date')
 
     config = Config(
-        client=client,
         minutes_per_day=minutes_per_day,
         minutes_per_week=minutes_per_week,
-        vim_otl_filepath=cfg['vim_otl_filepath'],
         start_date=start_date,
+        clients=cfg['clients'],
+        abbr=cfg.get('abbr')
     )
     return config

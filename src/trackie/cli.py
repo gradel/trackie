@@ -14,7 +14,7 @@ from trackie.conf import get_config
 
 
 def run(
-    client: str | None = None,
+    client: str,
     start: str | None = None,
     interval: str | None = 'week',
 ):
@@ -32,13 +32,16 @@ def run(
     else:
         start_date = dt.datetime.strptime(start, '%Y-%m-%d').date()
 
-    if client is None:
-        client = config.client
-        if client is None:
-            print('No client given')
-            return
+    if client in config.abbr:
+        client = config.abbr[client]
 
-    lines = get_lines(Path(config.vim_otl_filepath))
+    try:
+        vim_otl_filepath = config.clients[client]
+    except KeyError:
+        import sys
+        sys.exit(f'Error: Client {client} not found in "clients" table in YAML config file!')
+
+    lines = get_lines(Path(vim_otl_filepath))
     work_units = get_work_units(lines, client, start_date=start_date)
 
     if interval == 'week':
@@ -47,7 +50,6 @@ def run(
             start_date=start_date,
             #  end_date=end_date,
         )
-        #  print('Weekly Stats: ', weekly_stats)
         pretty_print_week_stats(client, weekly_stats, config.minutes_per_week)
 
     elif interval == 'day':
@@ -57,7 +59,6 @@ def run(
             #  end_date=end_date,
             excluded_weekdays=[5, 6]
         )
-        #  print('Daily Stats: ', daily_stats)
         pretty_print_day_stats(daily_stats, config.minutes_per_day)
 
 

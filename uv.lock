@@ -355,6 +355,8 @@ dev = [
     { name = "ipython" },
     { name = "mypy" },
     { name = "pdbpp" },
+]
+test = [
     { name = "pytest" },
 ]
 
@@ -366,8 +368,8 @@ dev = [
     { name = "ipython", specifier = ">=9.0.2" },
     { name = "mypy", specifier = ">=1.15.0" },
     { name = "pdbpp", specifier = ">=0.10.3" },
-    { name = "pytest", specifier = ">=8.3.5" },
 ]
+test = [{ name = "pytest", specifier = ">=8.3.5" }]
 
 [[package]]
 name = "traitlets"
