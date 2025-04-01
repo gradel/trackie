@@ -6,7 +6,6 @@ from .work.models import DayStat, WeekStat
 
 from rich.console import Console
 from rich.table import Table
-import typer
 
 
 def daterange(
@@ -76,38 +75,35 @@ def pretty_print_week_stats(
     minutes_per_week: int,
 ) -> None:
     console = Console()
-    table = Table("Week", "Minutes", title=client.capitalize())
+    table = Table(title=client.capitalize())
+    table.add_column("Week")
+    table.add_column("#: regular +-")
+    table.add_column("Minutes", justify='right')
+    table.add_column("Balance", justify='right')
+    table.add_column("Carryover", justify='right')
+
     for week_stat in week_stats:
         first_day, last_day = daterange_from_week(
             week_stat.year, week_stat.week, exclude_weekend=True)
         parts = []
         hours_per_week = minutes_per_week // 60
         if week_stat.minutes >= minutes_per_week:
-            parts.append(typer.style(
-                f'{(minutes_per_week // 60) * "="}',
-                fg=typer.colors.WHITE,
-            ))
+            parts.append(f'{(minutes_per_week // 60) * "#"}')
             hours_exceed = (week_stat.minutes - minutes_per_week) // 60
             if hours_exceed:
-                parts.append(typer.style(
-                    f'{hours_exceed * "="}',
-                    fg=typer.colors.GREEN,
-                ))
+                parts.append(f'{hours_exceed * "+"}')
         else:
             hours_done = week_stat.minutes // 60
-            parts.append(typer.style(
-                f'{hours_done * "="}',
-                fg=typer.colors.WHITE,
-            ))
+            parts.append(f'{hours_done * "#"}')
             if hours_done < hours_per_week:
-                parts.append(typer.style(
-                    f'{(hours_per_week - hours_done) * "="}',
-                    fg=typer.colors.RED,
-                ))
-        parts.append(f' {week_stat.minutes} from {minutes_per_week}')
+                parts.append(f'{(hours_per_week - hours_done) * "-"}')
+        balance = week_stat.minutes - minutes_per_week
         table.add_row(
             f'Week Number {week_stat.week}, {first_day} - {last_day}',
-            ''.join(parts)
+            ''.join(parts),
+            f' {week_stat.minutes} from {minutes_per_week}',
+            f'{"+" if balance > 0 else ""}{balance}',
+            f'{"+" if week_stat.carryover > 0 else ""}{week_stat.carryover}',
         )
     console.print(table)
     carryover = week_stats[-1].carryover
@@ -115,3 +111,15 @@ def pretty_print_week_stats(
         f'Current Balance: {GREEN if carryover >= 0 else RED}'
         f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
     )
+    #  table = Table(title=client.capitalize())
+    #  minutes_column = Column('Minutes', min_width=50)
+    #  table = Table("Week", minutes_column, "Balance", "Carryover", title=client.capitalize())
+    #  table.add_column("Minutes")
+    #  foo = ''.join(parts)
+    #  table.add_row(
+    #  '####',
+    #  #  parts[0]
+    #  #  foo,
+    #  #  '######## 250 from 480',
+    #  )
+    #  console.print(table)
