@@ -99,7 +99,7 @@ def pretty_print_week_stats(
                 parts.append(f'{(hours_per_week - hours_done) * "-"}')
         balance = week_stat.minutes - minutes_per_week
         table.add_row(
-            f'Week Number {week_stat.week}, {first_day} - {last_day}',
+            f'Nr.{week_stat.week}, {first_day} - {last_day}',
             ''.join(parts),
             f' {week_stat.minutes} from {minutes_per_week}',
             f'{"+" if balance > 0 else ""}{balance}',
