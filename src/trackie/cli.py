@@ -39,7 +39,10 @@ def run(
         vim_otl_filepath = config.clients[client]
     except KeyError:
         import sys
-        sys.exit(f'Error: Client {client} not found in "clients" table in YAML config file!')
+        sys.exit(
+            f'Error: Client {client} not found in "clients" '
+            'table in YAML config file!'
+        )
 
     lines = get_lines(Path(vim_otl_filepath))
     work_units = get_work_units(lines, client, start_date=start_date)
@@ -59,7 +62,7 @@ def run(
             #  end_date=end_date,
             excluded_weekdays=[5, 6]
         )
-        pretty_print_day_stats(daily_stats, config.minutes_per_day)
+        pretty_print_day_stats(client, daily_stats, config.minutes_per_day)
 
 
 def main():

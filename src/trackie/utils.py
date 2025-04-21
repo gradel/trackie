@@ -42,7 +42,7 @@ def daterange_from_week(
     First day is Monday (1), last is Sunday (0)
     If exclude_weekend is True last_day is Friday (5)
     """
-    first_day_of_week = dt.datetime.strptime(f'{year}-{week-1}-1', "%Y-%W-%w").date()
+    first_day_of_week = dt.datetime.strptime(f'{year}-{week-1}-1', "%Y-%W-%w").date()  # noqa: E501
     days_delta = 4 if exclude_weekend else 6
     last_day_of_week = first_day_of_week + dt.timedelta(days=days_delta)
     return first_day_of_week, last_day_of_week
@@ -55,16 +55,43 @@ def get_week_range(start_date: dt.date, end_date: dt.date) -> Sequence[int]:
     return range(start_date.isocalendar()[1], end_date.isocalendar()[1] + 1)
 
 
-def pretty_print_day_stats(day_stats: Sequence[DayStat], minutes_per_day: int) -> None:
+def pretty_print_day_stats(
+    client: str,
+    day_stats: Sequence[DayStat],
+    minutes_per_day: int
+) -> None:
+    console = Console()
+    table = Table(title=client.capitalize())
+    table.add_column("Day")
+    table.add_column("#: regular +-")
+    table.add_column("Minutes", justify='right')
+    table.add_column("Balance", justify='right')
+    table.add_column("Carryover", justify='right')
     for day_stat in day_stats:
-        print(
-            f'Date {day_stat.date}: ',
-            f'{GREEN}{(day_stat.minutes // 10) * "="}{RESET}',
-            f'{day_stat.minutes} from {minutes_per_day}'
+        parts = []
+        hours_per_day = minutes_per_day // 10
+        if day_stat.minutes >= minutes_per_day:
+            parts.append(f'{(minutes_per_day // 10) * "#"}')
+            hours_exceed = (day_stat.minutes - minutes_per_day) // 10
+            if hours_exceed:
+                parts.append(f'{hours_exceed * "+"}')
+        else:
+            hours_done = day_stat.minutes // 10
+            parts.append(f'{hours_done * "#"}')
+            if hours_done < hours_per_day:
+                parts.append(f'{(hours_per_day - hours_done) * "-"}')
+        balance = day_stat.minutes - minutes_per_day
+        table.add_row(
+            f'{day_stat.date}',
+            ''.join(parts),
+            f' {day_stat.minutes} from {minutes_per_day}',
+            f'{"+" if balance > 0 else ""}{balance}',
+            f'{"+" if day_stat.carryover > 0 else ""}{day_stat.carryover}',
         )
+    console.print(table)
     carryover = day_stats[-1].carryover
     print(
-        f'Current status: {GREEN if carryover >= 0 else RED}'
+        f'Current Balance: {GREEN if carryover >= 0 else RED}'
         f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
     )
 
@@ -111,15 +138,3 @@ def pretty_print_week_stats(
         f'Current Balance: {GREEN if carryover >= 0 else RED}'
         f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
     )
-    #  table = Table(title=client.capitalize())
-    #  minutes_column = Column('Minutes', min_width=50)
-    #  table = Table("Week", minutes_column, "Balance", "Carryover", title=client.capitalize())
-    #  table.add_column("Minutes")
-    #  foo = ''.join(parts)
-    #  table.add_row(
-    #  '####',
-    #  #  parts[0]
-    #  #  foo,
-    #  #  '######## 250 from 480',
-    #  )
-    #  console.print(table)
