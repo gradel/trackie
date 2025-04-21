@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import datetime as dt
 import os
 from pathlib import Path
+import re
 import tomllib
 
 
@@ -12,6 +13,9 @@ class Config:
     clients: dict[str, str]
     start_date: dt.date | None = None
     abbr: dict[str, str] | None = None
+    date_pattern: re.Pattern = re.compile(r'^20[23]\d-[01]\d-[0123]\d$')
+    description_pattern: re.Pattern = re.compile(r'^\t[^\t].*')
+    duration_pattern: re.Pattern = re.compile(r'^\t\t\d+')
 
 
 def get_config():

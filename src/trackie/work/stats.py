@@ -2,23 +2,60 @@ from collections import defaultdict
 from collections.abc import Generator, Sequence
 import datetime as dt
 from pathlib import Path
-import re
+import sys
 
 from ..utils import daterange, get_week_range
 from trackie.conf import get_config
 from .models import WorkUnit, WeekStat, DayStat
 
-date_pattern = re.compile(r'^[^\t].*')
-description_pattern = re.compile(r'^\t[^\t].*')
-duration_pattern = re.compile(r'^\t\t.*')
+
+def check_format(lines):
+
+    config = get_config()
+
+    if not config.date_pattern.match(lines[0]):
+        sys.exit(
+            'Format error on Line 1: '
+            'First line must be a date.'
+        )
+    if not config.duration_pattern.match(lines[-1]):
+        sys.exit(
+            'Format error on last Line: '
+            'Last line must be a duration.'
+        )
+
+    pairs = zip(lines, lines[1:])
+
+    for line_number, pair in enumerate(pairs):
+        if config.date_pattern.match(pair[0]):
+            if not config.description_pattern.match(pair[1]):
+                sys.exit(
+                    f'Format error on Line #{line_number + 1}: '
+                    'Date is not followed by a description line.'
+                )
+        elif config.description_pattern.match(pair[0]):
+            if not config.duration_pattern.match(pair[1]):
+                sys.exit(
+                    f'Format error on Line #{line_number + 1}: '
+                    'Description is not followed by a duration line.'
+                )
+        elif config.duration_pattern.match(pair[0]):
+            if not (
+                config.date_pattern.match(pair[1])
+                or config.description_pattern.match(pair[1])
+            ):
+                sys.exit(
+                    f'Format error on Line #{line_number + 1}: '
+                    'Duration is not followed by a description or date line.'
+                )
 
 
 def get_lines(path: Path) -> Generator[tuple[int, str]]:
     with path.open() as f:
-        lines = f.readlines()
+        lines = [line for line in f.readlines() if line.strip()]
+        check_format(lines)
         for line_number, line in enumerate(lines):
-            if line.strip():
-                yield line_number, line
+            yield line_number, line
 
 
 def get_work_units(
@@ -31,22 +68,25 @@ def get_work_units(
     if not end_date:
         end_date = dt.date.today() + dt.timedelta(days=1)
 
+    config = get_config()
+
     # date filter flag
     not_in_range = False
 
     for (line_number, line) in lines:
-        if date_pattern.match(line):
+        if config.date_pattern.match(line):
             date_str = line.strip()
             date = dt.datetime.strptime(date_str, "%Y-%m-%d").date()
-            not_in_range = True if date < start_date or date > end_date else False
+            not_in_range = True if date < start_date or date > end_date else False  # noqa: W501
             continue
-        elif description_pattern.match(line):
+        elif config.description_pattern.match(line):
             description = line.strip()
             description_line_number = line_number
             continue
-        elif duration_pattern.match(line) and not_in_range is False:
+        elif config.duration_pattern.match(line) and not_in_range is False:
             minutes = int(line.strip())
-            work_unit = WorkUnit(date, client, minutes, description, description_line_number)
+            work_unit = WorkUnit(
+                date, client, minutes, description, description_line_number)
             if work_unit.client.lower() == client.lower():
                 yield work_unit
 
@@ -70,7 +110,8 @@ def get_daily_stats(
 
     day_stats = []
     carryover = 0
-    for date in daterange(start_date, end_date, excluded_weekdays=excluded_weekdays):
+    for date in daterange(
+            start_date, end_date, excluded_weekdays=excluded_weekdays):
         minutes = work_per_day.get(date, 0)
         if date == start_date:
             diff = carryover = minutes - config.minutes_per_day
