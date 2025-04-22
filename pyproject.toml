@@ -14,8 +14,6 @@ dev = [
     "mypy>=1.15.0",
     "pdbpp>=0.10.3",
     "ruff",
-]
-test = [
     "pytest>=8.3.5",
 ]
 
