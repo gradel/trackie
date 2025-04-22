@@ -1,11 +1,58 @@
 from collections.abc import Generator, Sequence
 import datetime as dt
+import sys
 
-from .ansi_colors import GREEN, RED, RESET
-from .work.models import DayStat, WeekStat
+from trackie.ansi_colors import GREEN, RED, RESET
+from trackie.conf import Config, get_config
+from trackie.work.models import DayStat, WeekStat
 
 from rich.console import Console
 from rich.table import Table
+
+
+def check_format(line_gen: Generator[str], conf: Config | None = None):
+
+    lines = list(line_gen)
+
+    if not conf:
+        config = get_config()
+
+    if not config.date_pattern.match(lines[0]):
+        sys.exit(
+            'Format error on Line 1: '
+            'First line must be a date.'
+        )
+    if not config.duration_pattern.match(lines[-1]):
+        sys.exit(
+            'Format error on last Line: '
+            'Last line must be a duration.'
+        )
+
+    pairs = zip(lines, lines[1:])
+
+    for line_number, pair in enumerate(pairs):
+        if config.date_pattern.match(pair[0]):
+            if not config.description_pattern.match(pair[1]):
+                sys.exit(
+                    f'Format error on line #{line_number + 1}: '
+                    'date is not followed by a description line. '
+                    'Hint: description must not start with a number!'
+                )
+        elif config.description_pattern.match(pair[0]):
+            if not config.duration_pattern.match(pair[1]):
+                sys.exit(
+                    f'Format error on line #{line_number + 1}: '
+                    'description not followed by a duration line.'
+                )
+        elif config.duration_pattern.match(pair[0]):
+            if not (
+                config.date_pattern.match(pair[1])
+                or config.description_pattern.match(pair[1])
+            ):
+                sys.exit(
+                    f'Format error on line #{line_number + 1}: '
+                    'duration is not followed by a description or date line.'
+                )
 
 
 def daterange(

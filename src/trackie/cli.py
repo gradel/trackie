@@ -7,9 +7,14 @@ from trackie.work.stats import (
     get_daily_stats,
     get_weekly_stats,
     get_lines,
+    get_numbered_lines,
     get_work_units,
 )
-from trackie.utils import pretty_print_day_stats, pretty_print_week_stats
+from trackie.utils import (
+    check_format,
+    pretty_print_day_stats,
+    pretty_print_week_stats,
+)
 from trackie.conf import get_config
 
 
@@ -17,6 +22,8 @@ def run(
     client: str,
     start: str | None = None,
     interval: str | None = 'week',
+    data_path: str | None = None,
+    # config_path: str | None = None,
 ):
     """
     Display work time statistics.
@@ -35,17 +42,19 @@ def run(
     if client in config.abbr:
         client = config.abbr[client]
 
-    try:
-        vim_otl_filepath = config.clients[client]
-    except KeyError:
-        import sys
-        sys.exit(
-            f'Error: Client {client} not found in "clients" '
-            'table in YAML config file!'
-        )
+    if data_path is None:
+        try:
+            data_path = config.clients[client]
+        except KeyError:
+            import sys
+            sys.exit(
+                f'Error: Client {client} not found in "clients" '
+                'table in YAML config file and data-path argument missing.'
+            )
 
-    lines = get_lines(Path(vim_otl_filepath))
-    work_units = get_work_units(lines, client, start_date=start_date)
+    check_format(get_lines(Path(data_path)))
+    work_units = get_work_units(
+        get_numbered_lines(Path(data_path)), client, start_date=start_date)
 
     if interval == 'week':
         weekly_stats = get_weekly_stats(

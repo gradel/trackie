@@ -18,10 +18,13 @@ class Config:
     duration_pattern: re.Pattern = re.compile(r'^\t\t\d+')
 
 
-def get_config():
-    home = Path.home()
-    config_file = home / '.trackie.toml'
-    with config_file.open('rb') as f:
+def get_config(path: str | None = None):
+    if path:
+        cfg_file = Path(path)
+    else:
+        home = Path.home()
+        cfg_file = home / '.trackie.toml'
+    with cfg_file.open('rb') as f:
         cfg = tomllib.load(f)
 
     env_minutes_per_day = os.getenv('TRACKIE_MINUTES_PER_DAY')
@@ -40,7 +43,7 @@ def get_config():
     if env_start_date:
         start_date = dt.datetime.strptime(env_start_date, '%Y-%m-%d')
     else:
-        start_date = cfg.get('start_date')
+        start_date = cfg['start_date']
 
     config = Config(
         minutes_per_day=minutes_per_day,
@@ -49,4 +52,8 @@ def get_config():
         clients=cfg['clients'],
         abbr=cfg.get('abbr')
     )
+    if cfg['format'] == 'plain':
+        config.description_pattern = re.compile(r"^[^\d].*$")
+        config.duration_pattern = re.compile(r"^\d{1,3}$")
+
     return config

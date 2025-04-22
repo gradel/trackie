@@ -2,60 +2,28 @@ from collections import defaultdict
 from collections.abc import Generator, Sequence
 import datetime as dt
 from pathlib import Path
-import sys
 
 from ..utils import daterange, get_week_range
 from trackie.conf import get_config
 from .models import WorkUnit, WeekStat, DayStat
 
 
-def check_format(lines):
-
-    config = get_config()
-
-    if not config.date_pattern.match(lines[0]):
-        sys.exit(
-            'Format error on Line 1: '
-            'First line must be a date.'
-        )
-    if not config.duration_pattern.match(lines[-1]):
-        sys.exit(
-            'Format error on last Line: '
-            'Last line must be a duration.'
-        )
-
-    pairs = zip(lines, lines[1:])
-
-    for line_number, pair in enumerate(pairs):
-        if config.date_pattern.match(pair[0]):
-            if not config.description_pattern.match(pair[1]):
-                sys.exit(
-                    f'Format error on Line #{line_number + 1}: '
-                    'Date is not followed by a description line.'
-                )
-        elif config.description_pattern.match(pair[0]):
-            if not config.duration_pattern.match(pair[1]):
-                sys.exit(
-                    f'Format error on Line #{line_number + 1}: '
-                    'Description is not followed by a duration line.'
-                )
-        elif config.duration_pattern.match(pair[0]):
-            if not (
-                config.date_pattern.match(pair[1])
-                or config.description_pattern.match(pair[1])
-            ):
-                sys.exit(
-                    f'Format error on Line #{line_number + 1}: '
-                    'Duration is not followed by a description or date line.'
-                )
-
-
-def get_lines(path: Path) -> Generator[tuple[int, str]]:
+def get_numbered_lines(
+    path: Path,
+) -> Generator[tuple[int, str]]:
     with path.open() as f:
-        lines = [line for line in f.readlines() if line.strip()]
-        check_format(lines)
-        for line_number, line in enumerate(lines):
-            yield line_number, line
+        for line_number, line in enumerate(f):
+            if line.strip():
+                yield line_number, line
+
+
+def get_lines(
+    path: Path,
+) -> Generator[str]:
+    with path.open() as f:
+        for line in f:
+            if line.strip():
+                yield line
 
 
 def get_work_units(
