@@ -3,6 +3,7 @@ from pathlib import Path
 
 import typer
 
+from trackie.ansi_colors import RED, RESET, BACKGROUND_BRIGHT_YELLOW
 from trackie.work.stats import (
     get_daily_stats,
     get_weekly_stats,
@@ -14,6 +15,7 @@ from trackie.utils import (
     check_format,
     pretty_print_day_stats,
     pretty_print_week_stats,
+    TrackieFormatException,
 )
 from trackie.conf import get_config
 
@@ -52,7 +54,13 @@ def run(
                 'table in YAML config file and data-path argument missing.'
             )
 
-    check_format(get_lines(Path(data_path)))
+    try:
+        check_format(get_lines(Path(data_path)))
+    except TrackieFormatException as e:
+        print(RED + BACKGROUND_BRIGHT_YELLOW + f'{e.args[0]}' + RESET)
+        import sys
+        sys.exit(-1)
+
     work_units = get_work_units(
         get_numbered_lines(Path(data_path)), client, start_date=start_date)
 

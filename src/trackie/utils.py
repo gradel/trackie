@@ -1,6 +1,5 @@
 from collections.abc import Generator, Sequence
 import datetime as dt
-import sys
 
 from trackie.ansi_colors import GREEN, RED, RESET
 from trackie.conf import Config, get_config
@@ -8,6 +7,10 @@ from trackie.work.models import DayStat, WeekStat
 
 from rich.console import Console
 from rich.table import Table
+
+
+class TrackieFormatException(Exception):
+    pass
 
 
 def check_format(line_gen: Generator[str], conf: Config | None = None):
@@ -18,12 +21,12 @@ def check_format(line_gen: Generator[str], conf: Config | None = None):
         config = get_config()
 
     if not config.date_pattern.match(lines[0]):
-        sys.exit(
+        raise TrackieFormatException(
             'Format error on Line 1: '
             'First line must be a date.'
         )
     if not config.duration_pattern.match(lines[-1]):
-        sys.exit(
+        raise TrackieFormatException(
             'Format error on last Line: '
             'Last line must be a duration.'
         )
@@ -33,14 +36,14 @@ def check_format(line_gen: Generator[str], conf: Config | None = None):
     for line_number, pair in enumerate(pairs):
         if config.date_pattern.match(pair[0]):
             if not config.description_pattern.match(pair[1]):
-                sys.exit(
+                raise TrackieFormatException(
                     f'Format error on line #{line_number + 1}: '
                     'date is not followed by a description line. '
                     'Hint: description must not start with a number!'
                 )
         elif config.description_pattern.match(pair[0]):
             if not config.duration_pattern.match(pair[1]):
-                sys.exit(
+                raise TrackieFormatException(
                     f'Format error on line #{line_number + 1}: '
                     'description not followed by a duration line.'
                 )
@@ -49,10 +52,11 @@ def check_format(line_gen: Generator[str], conf: Config | None = None):
                 config.date_pattern.match(pair[1])
                 or config.description_pattern.match(pair[1])
             ):
-                sys.exit(
+                raise TrackieFormatException(
                     f'Format error on line #{line_number + 1}: '
                     'duration is not followed by a description or date line.'
                 )
+    return True
 
 
 def daterange(

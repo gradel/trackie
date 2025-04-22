@@ -5,6 +5,15 @@ from pathlib import Path
 import re
 import tomllib
 
+date_pattern = re.compile(r'''
+    ^20[23]\d-  # year
+    (01|02|03|04|05|06|07|08|09|10|11|12)-     # month
+    (01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31)$   # day  # noqa: W501
+''', re.VERBOSE)
+
+vim_otl_description_pattern = re.compile(r'^\t[^\t].*')
+vim_otl_duration_pattern = re.compile(r'^\t\t\d+')
+
 
 @dataclass
 class Config:
@@ -13,9 +22,9 @@ class Config:
     clients: dict[str, str]
     start_date: dt.date | None = None
     abbr: dict[str, str] | None = None
-    date_pattern: re.Pattern = re.compile(r'^20[23]\d-[01]\d-[0123]\d$')
-    description_pattern: re.Pattern = re.compile(r'^\t[^\t].*')
-    duration_pattern: re.Pattern = re.compile(r'^\t\t\d+')
+    date_pattern: re.Pattern = date_pattern
+    description_pattern: re.Pattern = vim_otl_description_pattern
+    duration_pattern: re.Pattern = vim_otl_duration_pattern
 
 
 def get_config(path: str | None = None):
