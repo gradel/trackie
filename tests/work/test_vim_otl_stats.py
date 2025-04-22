@@ -25,9 +25,9 @@ def test_empty_file():
 
 def test_one_work_unit():
     lines = [
-        (0, '2025-03-01'),
-        (2, '\tTask 1'),
-        (3, '\t\t5'),
+        '2025-03-01',
+        '\tTask 1',
+        '\t\t5',
     ]
     work_units = list(get_work_units(
         lines, 'client', start_date=dt.date(2025, 3, 1)))
@@ -44,18 +44,18 @@ def test_four_days_exclude_outer():
     last_date = dt.date(2025, 3, 15)
     day_before_last_date = last_date - dt.timedelta(days=1)
     lines = [
-        (0, first_date.strftime('%Y-%m-%d')),
-        (2, '\tTask 1'),
-        (3, '\t\t5'),
-        (4, '2025-03-05'),
-        (6, '\tTask 2'),
-        (7, '\t\t10'),
-        (8, '2025-03-10'),
-        (10, '\tTask 3'),
-        (11, '\t\t20'),
-        (12, last_date.strftime('%Y-%m-%d')),
-        (14, '\tTask 4'),
-        (15, '\t\t30'),
+        first_date.strftime('%Y-%m-%d'),
+        '\tTask 1',
+        '\t\t5',
+        '2025-03-05',
+        '\tTask 2',
+        '\t\t10',
+        '2025-03-10',
+        '\tTask 3',
+        '\t\t20',
+        last_date.strftime('%Y-%m-%d'),
+        '\tTask 4',
+        '\t\t30',
     ]
     work_units = list(get_work_units(
         lines,

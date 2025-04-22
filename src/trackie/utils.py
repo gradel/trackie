@@ -13,9 +13,7 @@ class TrackieFormatException(Exception):
     pass
 
 
-def check_format(line_gen: Generator[str], conf: Config | None = None):
-
-    lines = list(line_gen)
+def check_format(lines: Sequence[str], conf: Config | None = None):
 
     if not conf:
         config = get_config()
@@ -41,12 +39,12 @@ def check_format(line_gen: Generator[str], conf: Config | None = None):
                     'date is not followed by a description line. '
                     'Hint: description must not start with a number!'
                 )
-        elif config.description_pattern.match(pair[0]):
-            if not config.duration_pattern.match(pair[1]):
-                raise TrackieFormatException(
-                    f'Format error on line #{line_number + 1}: '
-                    'description not followed by a duration line.'
-                )
+        # elif config.description_pattern.match(pair[0]):
+        #     if not config.duration_pattern.match(pair[1]):
+        #         raise TrackieFormatException(
+        #             f'Format error on line #{line_number + 1}: '
+        #             'description not followed by a duration line.'
+        #         )
         elif config.duration_pattern.match(pair[0]):
             if not (
                 config.date_pattern.match(pair[1])

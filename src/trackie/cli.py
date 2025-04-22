@@ -8,7 +8,6 @@ from trackie.work.stats import (
     get_daily_stats,
     get_weekly_stats,
     get_lines,
-    get_numbered_lines,
     get_work_units,
 )
 from trackie.utils import (
@@ -54,15 +53,16 @@ def run(
                 'table in YAML config file and data-path argument missing.'
             )
 
+    lines = list(get_lines(Path(data_path)))
+
     try:
-        check_format(get_lines(Path(data_path)))
+        check_format(lines)
     except TrackieFormatException as e:
         print(RED + BACKGROUND_BRIGHT_YELLOW + f'{e.args[0]}' + RESET)
         import sys
         sys.exit(-1)
 
-    work_units = get_work_units(
-        get_numbered_lines(Path(data_path)), client, start_date=start_date)
+    work_units = get_work_units(lines, client, start_date=start_date)
 
     if interval == 'week':
         weekly_stats = get_weekly_stats(

@@ -8,15 +8,6 @@ from trackie.conf import get_config
 from .models import WorkUnit, WeekStat, DayStat
 
 
-def get_numbered_lines(
-    path: Path,
-) -> Generator[tuple[int, str]]:
-    with path.open() as f:
-        for line_number, line in enumerate(f):
-            if line.strip():
-                yield line_number, line
-
-
 def get_lines(
     path: Path,
 ) -> Generator[str]:
@@ -27,7 +18,7 @@ def get_lines(
 
 
 def get_work_units(
-    lines: Generator[tuple[int, str]],
+    lines: Sequence[str],
     client: str,
     start_date: dt.date,
     end_date: dt.date | None = None,
@@ -40,21 +31,21 @@ def get_work_units(
 
     # date filter flag
     not_in_range = False
+    description = ''
 
-    for (line_number, line) in lines:
+    for line in lines:
         if config.date_pattern.match(line):
             date_str = line.strip()
             date = dt.datetime.strptime(date_str, "%Y-%m-%d").date()
             not_in_range = True if date < start_date or date > end_date else False  # noqa: W501
             continue
         elif config.description_pattern.match(line):
-            description = line.strip()
-            description_line_number = line_number
+            description += f' {line.strip()}'
             continue
         elif config.duration_pattern.match(line) and not_in_range is False:
             minutes = int(line.strip())
-            work_unit = WorkUnit(
-                date, client, minutes, description, description_line_number)
+            work_unit = WorkUnit(date, client, minutes, description)
+            description = ''
             if work_unit.client.lower() == client.lower():
                 yield work_unit
 
