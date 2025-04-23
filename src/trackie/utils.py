@@ -1,12 +1,7 @@
 from collections.abc import Generator, Sequence
 import datetime as dt
 
-from trackie.ansi_colors import GREEN, RED, RESET
 from trackie.conf import Config, get_config
-from trackie.work.models import DayStat, WeekStat
-
-from rich.console import Console
-from rich.table import Table
 
 
 class TrackieFormatException(Exception):
@@ -102,88 +97,3 @@ def get_week_range(start_date: dt.date, end_date: dt.date) -> Sequence[int]:
     Get (inclusive) week numbers lying between two dates.
     """
     return range(start_date.isocalendar()[1], end_date.isocalendar()[1] + 1)
-
-
-def pretty_print_day_stats(
-    client: str,
-    day_stats: Sequence[DayStat],
-    minutes_per_day: int
-) -> None:
-    console = Console()
-    table = Table(title=client.capitalize())
-    table.add_column("Day")
-    table.add_column("#: regular +-")
-    table.add_column("Minutes", justify='right')
-    table.add_column("Balance", justify='right')
-    table.add_column("Carryover", justify='right')
-    for day_stat in day_stats:
-        parts = []
-        hours_per_day = minutes_per_day // 10
-        if day_stat.minutes >= minutes_per_day:
-            parts.append(f'{(minutes_per_day // 10) * "#"}')
-            hours_exceed = (day_stat.minutes - minutes_per_day) // 10
-            if hours_exceed:
-                parts.append(f'{hours_exceed * "+"}')
-        else:
-            hours_done = day_stat.minutes // 10
-            parts.append(f'{hours_done * "#"}')
-            if hours_done < hours_per_day:
-                parts.append(f'{(hours_per_day - hours_done) * "-"}')
-        balance = day_stat.minutes - minutes_per_day
-        table.add_row(
-            f'{day_stat.date}',
-            ''.join(parts),
-            f' {day_stat.minutes} from {minutes_per_day}',
-            f'{"+" if balance > 0 else ""}{balance}',
-            f'{"+" if day_stat.carryover > 0 else ""}{day_stat.carryover}',
-        )
-    console.print(table)
-    carryover = day_stats[-1].carryover
-    print(
-        f'Current Balance: {GREEN if carryover >= 0 else RED}'
-        f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
-    )
-
-
-def pretty_print_week_stats(
-    client: str,
-    week_stats: Sequence[WeekStat],
-    minutes_per_week: int,
-) -> None:
-    console = Console()
-    table = Table(title=client.capitalize())
-    table.add_column("Week")
-    table.add_column("#: regular +-")
-    table.add_column("Minutes", justify='right')
-    table.add_column("Balance", justify='right')
-    table.add_column("Carryover", justify='right')
-
-    for week_stat in week_stats:
-        first_day, last_day = daterange_from_week(
-            week_stat.year, week_stat.week, exclude_weekend=True)
-        parts = []
-        hours_per_week = minutes_per_week // 60
-        if week_stat.minutes >= minutes_per_week:
-            parts.append(f'{(minutes_per_week // 60) * "#"}')
-            hours_exceed = (week_stat.minutes - minutes_per_week) // 60
-            if hours_exceed:
-                parts.append(f'{hours_exceed * "+"}')
-        else:
-            hours_done = week_stat.minutes // 60
-            parts.append(f'{hours_done * "#"}')
-            if hours_done < hours_per_week:
-                parts.append(f'{(hours_per_week - hours_done) * "-"}')
-        balance = week_stat.minutes - minutes_per_week
-        table.add_row(
-            f'Nr.{week_stat.week}, {first_day} - {last_day}',
-            ''.join(parts),
-            f' {week_stat.minutes} from {minutes_per_week}',
-            f'{"+" if balance > 0 else ""}{balance}',
-            f'{"+" if week_stat.carryover > 0 else ""}{week_stat.carryover}',
-        )
-    console.print(table)
-    carryover = week_stats[-1].carryover
-    print(
-        f'Current Balance: {GREEN if carryover >= 0 else RED}'
-        f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
-    )
