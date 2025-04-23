@@ -1,5 +1,7 @@
 import datetime as dt
 from pathlib import Path
+import sys
+from typing_extensions import Annotated
 
 import typer
 
@@ -28,11 +30,16 @@ app = typer.Typer()
 
 @app.command()
 def run(
-    client: str,
-    start: str | None = None,
-    interval: str | None = 'week',
-    data_path: str | None = None,
-    csv: bool = False
+    client:  str,
+    start: Annotated[str, typer.Option(
+        help="Use data after this date. Format: YYYY-MM-DD")] = None,
+    interval: Annotated[str, typer.Option(
+        help="Show data aggregated per day or per week. Possible values: day|week"  # noqa: W501
+    )] = 'week',
+    # data_path: Annotated[str, typer.Option(
+    #     help="Path to a file with work data.")] = None,
+    csv: Annotated[bool, typer.Option(
+        help="Export data to CSV file in your home directory")] = False,
     # config_path: str | None = None,
 ):
     """
@@ -52,15 +59,13 @@ def run(
     if client in config.abbr:
         client = config.abbr[client]
 
-    if data_path is None:
-        try:
-            data_path = config.clients[client]
-        except KeyError:
-            import sys
-            sys.exit(
-                f'Error: Client {client} not found in "clients" '
-                'table in YAML config file and data-path argument missing.'
-            )
+    try:
+        data_path = config.clients[client]
+    except KeyError:
+        sys.exit(
+            RED + f'Error: Client "{client}" not found in "clients" '
+            'table in YAML config file.' + RESET
+        )
 
     lines = list(get_lines(Path(data_path)))
 
@@ -68,12 +73,16 @@ def run(
         check_format(lines)
     except TrackieFormatException as e:
         print(RED + BACKGROUND_BRIGHT_YELLOW + f'{e.args[0]}' + RESET)
-        import sys
         sys.exit(-1)
 
     work_units = get_work_units(lines, client, start_date=start_date)
 
     if interval == 'week':
+        if not config.minutes_per_week:
+            sys.exit(
+                RED + BACKGROUND_BRIGHT_YELLOW
+                + '"minutes_per_week" config value must be set in'
+                + ' ~/.trackie.toml when using interval "week"' + RESET)
         weekly_stats = get_weekly_stats(
             work_units=work_units,
             start_date=start_date,
@@ -88,6 +97,11 @@ def run(
                 client, weekly_stats, config.minutes_per_week)
 
     elif interval == 'day':
+        if not config.minutes_per_day:
+            sys.exit(
+                RED + BACKGROUND_BRIGHT_YELLOW
+                + '"minutes_per_day" config value must be set in'
+                + ' ~/.trackie.toml when using interval "day"' + RESET)
         daily_stats = get_daily_stats(
             work_units=work_units,
             start_date=start_date,
