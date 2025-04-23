@@ -23,6 +23,10 @@ from trackie.work.stats import (
 )
 
 
+app = typer.Typer()
+
+
+@app.command()
 def run(
     client: str,
     start: str | None = None,
@@ -99,5 +103,5 @@ def run(
                 client, daily_stats, config.minutes_per_day)
 
 
-def main():
-    typer.run(run)
+if __name__ == '__main__':
+    app()

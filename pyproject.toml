@@ -21,7 +21,7 @@ dev = [
 package = true
 
 [project.scripts]
-wtrack = "trackie.cli:main"
+wtrack = "trackie.cli:app"
 
 # [build-system]
 # requires = ["uv"]
