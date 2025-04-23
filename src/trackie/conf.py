@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 import datetime as dt
-import os
 from pathlib import Path
 import re
 import tomllib
@@ -25,6 +24,7 @@ class Config:
     date_pattern: re.Pattern = date_pattern
     description_pattern: re.Pattern = vim_otl_description_pattern
     duration_pattern: re.Pattern = vim_otl_duration_pattern
+    spaces: int | None = None
 
 
 def get_config(path: str | None = None):
@@ -37,20 +37,24 @@ def get_config(path: str | None = None):
         cfg = tomllib.load(f)
 
     minutes_per_day = cfg['minutes_per_day'] if 'minutes_per_day' in cfg else None  # noqa: W501
-
     minutes_per_week = cfg['minutes_per_week'] if 'minutes_per_week' in cfg else None  # noqa: W501
-
     start_date = cfg['start_date'] if 'start_date' in cfg else None
+    spaces = cfg['spaces'] if 'spaces' in cfg and cfg['spaces'] else None
 
     config = Config(
         minutes_per_day=minutes_per_day,
         minutes_per_week=minutes_per_week,
         start_date=start_date,
         clients=cfg['clients'],
-        abbr=cfg.get('abbr')
+        abbr=cfg.get('abbr'),
+        spaces=spaces,
     )
-    if cfg['format'] == 'plain':
-        config.description_pattern = re.compile(r"^[^\d].*$")
-        config.duration_pattern = re.compile(r"^\d{1,3}$")
+    if config.spaces:
+        spaces_description_pattern = re.compile(
+            r'^ {' + f'{config.spaces}' + r'}[^ ].*')
+        spaces_duration_pattern = re.compile(
+            r'^ {' + f'{config.spaces * 2}' + r'}\d+')
+        config.description_pattern = spaces_description_pattern
+        config.duration_pattern = spaces_duration_pattern
 
     return config

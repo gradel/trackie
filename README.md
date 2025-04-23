@@ -4,8 +4,8 @@ Track your working time with [vim-outliner](https://github.com/vimoutliner/vimou
 as backend and write-frontend.
 Using [rich](https://github.com/Textualize/rich) tables as read-frontend or export data to CSV file.
 
-Your tracked file where you note your work must use this schema:
-
+Your tracked file where you note your work must use this schema
+(Note: tabs may be spaces, see config):
 ```text
 YYYY-MM-DD
 <- tab ->work description
@@ -13,8 +13,8 @@ YYYY-MM-DD
 YYYY-MM-DD
 <- tab ->work description
 <- tab -><- tab ->duration
-<- tab ->work description
-<- tab ->that spans on another line
+<- tab ->work description that
+<- tab ->spans on another line
 <- tab -><- tab ->duration
 ...
 ```
@@ -36,6 +36,7 @@ trackie reads its config from a `.trackie.toml` in users home directory:
 minutes_per_week = 480
 minutes_per_day = 96
 start_date = YYYY-MM-DD
+spaces = 4 # Only when using spaces for tabs!
 
 [clients]
 employer = "/path/to/foo.otl"
@@ -51,10 +52,20 @@ uv tool install trackie@git+https://git@github.com/gradel/trackie
 ```
 Then create `~/.trackie.toml` file and edit it. Mandatory fields are
 
-- minutes_per_week when aggrgating over weeks
-- minutes_per_day when aggregating over days
-- a client in the clients table which value is the path to your work tracking file
+- minutes_per_week - when aggrgating over weeks
+- minutes_per_day - when aggregating over days
+- client - in the clients table whose value is the path to your work tracking file
 
+Optional fields are:
+
+- start_date - if not set the first day of the current month is used
+- spaces - if you want to use spaces for tabs set this to the number of spaces you will insert for one tab
+
+Update
+------
+```bash
+uv tool upgrade trackie@git+ssh://git@github.com/gradel/trackie
+```
 Usage
 -----
 ```bash
