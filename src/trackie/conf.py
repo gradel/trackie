@@ -14,6 +14,9 @@ date_pattern = re.compile(r'''
 tabs_description_pattern = re.compile(r'^\t[^\t].*')
 tabs_duration_pattern = re.compile(r'^\t\t\d+')
 
+spaces_description_pattern = r'^{}[^ ].*'
+spaces_duration_pattern = r'^{}\d+'
+
 
 @dataclass
 class Config:
@@ -54,11 +57,9 @@ def get_config(path: str | None = None):
         spaces=spaces,
     )
     if config.spaces:
-        spaces_description_pattern = re.compile(
-            r'^ {' + f'{config.spaces}' + r'}[^ ].*')
-        spaces_duration_pattern = re.compile(
-            r'^ {' + f'{config.spaces * 2}' + r'}\d+')
-        config.description_pattern = spaces_description_pattern
-        config.duration_pattern = spaces_duration_pattern
+        config.description_pattern = re.compile(
+            spaces_description_pattern.format(' ' * config.spaces))
+        config.duration_pattern = re.compile(
+            spaces_duration_pattern.format(' ' * config.spaces * 2))
 
     return config
