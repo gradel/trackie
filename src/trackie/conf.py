@@ -11,8 +11,8 @@ date_pattern = re.compile(r'''
     (01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31)$   # day  # noqa: W501
 ''', re.VERBOSE)
 
-vim_otl_description_pattern = re.compile(r'^\t[^\t].*')
-vim_otl_duration_pattern = re.compile(r'^\t\t\d+')
+tabs_description_pattern = re.compile(r'^\t[^\t].*')
+tabs_duration_pattern = re.compile(r'^\t\t\d+')
 
 
 @dataclass
@@ -23,8 +23,8 @@ class Config:
     start_date: dt.date | None = None
     abbr: dict[str, str] | None = None
     date_pattern: re.Pattern = date_pattern
-    description_pattern: re.Pattern = vim_otl_description_pattern
-    duration_pattern: re.Pattern = vim_otl_duration_pattern
+    description_pattern: re.Pattern = tabs_description_pattern
+    duration_pattern: re.Pattern = tabs_duration_pattern
     spaces: int | None = None
     default: dict[str, Any] | None = None
 
