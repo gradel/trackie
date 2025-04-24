@@ -97,7 +97,8 @@ def run(
         print(RED + BACKGROUND_BRIGHT_YELLOW + f'{e.args[0]}' + RESET)
         sys.exit(-1)
 
-    work_units = get_work_units(lines, client, start_date=start_date)
+    work_units = get_work_units(
+        lines, client, config, start_date=start_date)
 
     if interval == 'week':
         if not config.minutes_per_week:

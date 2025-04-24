@@ -19,20 +19,20 @@ def test_get_daily_stats(single_work_unit):
     assert day_stat.diff == 0
 
 
-def test_empty_file():
+def test_empty_file(tab_config):
     lines = []
     assert list(get_work_units(
-        lines, 'client', start_date=dt.date(2000, 1, 1))) == []
+        lines, 'client', tab_config, start_date=dt.date(2000, 1, 1))) == []
 
 
-def test_one_work_unit():
+def test_one_work_unit(tab_config):
     lines = [
         '2025-03-01',
         '\tTask 1',
         '\t\t5',
     ]
     work_units = list(get_work_units(
-        lines, 'client', start_date=dt.date(2025, 3, 1)))
+        lines, 'client', tab_config, start_date=dt.date(2025, 3, 1)))
     assert len(work_units) == 1
     work_unit = work_units[0]
     assert work_unit.date.year == 2025
@@ -40,7 +40,7 @@ def test_one_work_unit():
     assert work_unit.date.day == 1
 
 
-def test_four_days_exclude_outer():
+def test_four_days_exclude_outer(tab_config):
     first_date = dt.date(2025, 3, 1)
     day_after_first_date = first_date + dt.timedelta(days=1)
     last_date = dt.date(2025, 3, 15)
@@ -62,6 +62,7 @@ def test_four_days_exclude_outer():
     work_units = list(get_work_units(
         lines,
         'client',
+        tab_config,
         start_date=day_after_first_date,
         end_date=day_before_last_date
     ))

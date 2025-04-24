@@ -3,8 +3,8 @@ from collections.abc import Generator, Sequence
 import datetime as dt
 from pathlib import Path
 
-from ..utils import daterange, get_week_range
-from trackie.conf import get_config
+from trackie.utils import daterange, get_week_range
+from trackie.conf import Config, get_config
 from .models import WorkUnit, WeekStat, DayStat
 
 
@@ -20,14 +20,13 @@ def get_lines(
 def get_work_units(
     lines: Sequence[str],
     client: str,
+    config: Config,
     start_date: dt.date,
     end_date: dt.date | None = None,
 ) -> Generator[WorkUnit]:
 
     if not end_date:
         end_date = dt.date.today() + dt.timedelta(days=1)
-
-    config = get_config()
 
     # date filter flag
     not_in_range = False
