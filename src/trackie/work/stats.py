@@ -52,12 +52,12 @@ def get_work_units(
 
 def get_daily_stats(
     work_units: Generator[WorkUnit],
+    *,
     start_date: dt.date,
+    minutes_per_day: int,
     end_date: dt.date | None = None,
     excluded_weekdays: Sequence[int] | None = None,
 ) -> Sequence[DayStat]:
-
-    config = get_config()
 
     if not end_date:
         end_date = dt.date.today() + dt.timedelta(days=1)
@@ -73,12 +73,12 @@ def get_daily_stats(
             start_date, end_date, excluded_weekdays=excluded_weekdays):
         minutes = work_per_day.get(date, 0)
         if date == start_date:
-            diff = carryover = minutes - config.minutes_per_day
+            diff = carryover = minutes - minutes_per_day
             day_stat = DayStat(date, minutes, diff, diff)
             day_stats.append(day_stat)
         else:
-            carryover = minutes + carryover - config.minutes_per_day
-            diff = minutes - config.minutes_per_day
+            carryover = minutes + carryover - minutes_per_day
+            diff = minutes - minutes_per_day
             day_stat = DayStat(date, minutes, diff, carryover)
             day_stats.append(day_stat)
     return day_stats
@@ -86,11 +86,11 @@ def get_daily_stats(
 
 def get_weekly_stats(
     work_units: Generator[WorkUnit],
+    *,
     start_date: dt.date,
+    minutes_per_week: int,
     end_date: dt.date | None = None,
 ) -> Sequence[WeekStat]:
-
-    config = get_config()
 
     if not end_date:
         end_date = dt.date.today() + dt.timedelta(days=1)
@@ -114,12 +114,12 @@ def get_weekly_stats(
     carryover = 0
     for index, ((year, week), minutes) in enumerate(work_per_week.items()):
         if index == 0:
-            diff = carryover = minutes - config.minutes_per_week
+            diff = carryover = minutes - minutes_per_week
             week_stat = WeekStat(year, week, minutes, diff, diff)
             week_stats.append(week_stat)
         else:
-            carryover = minutes + carryover - config.minutes_per_week
-            diff = minutes - config.minutes_per_week
+            carryover = minutes + carryover - minutes_per_week
+            diff = minutes - minutes_per_week
             week_stat = WeekStat(year, week, minutes, diff, carryover)
             week_stats.append(week_stat)
     return sorted(week_stats, key=lambda week_stat: week_stat.week)

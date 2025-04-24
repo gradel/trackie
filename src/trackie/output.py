@@ -145,7 +145,7 @@ def pretty_print_week_stats(
 
 def output_week_stats_csv(
     client: str,
-    week_stats: Sequence[DayStat],
+    week_stats: Sequence[WeekStat],
     minutes_per_week: int
 ) -> Path:
     output_path = build_output_path(client, 'weekly')

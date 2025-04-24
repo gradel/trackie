@@ -28,22 +28,39 @@ from trackie.work.stats import (
 app = typer.Typer()
 
 
+def get_default_client() -> str | None:
+    config = get_config()
+    if config.default and 'client' in config.default:
+        return config.default['client']
+    return None
+
+
 @app.command()
 def run(
-    client:  str,
-    start: Annotated[str, typer.Option(
-        help="Use data after this date. Format: YYYY-MM-DD")] = None,
+    client: Annotated[str, typer.Argument(
+        default_factory=get_default_client,
+        help="May be omitted if a default client is set in config file")],
+    start: Annotated[str | None, typer.Option(
+        help=(
+            "Use data after this date. Format: YYYY-MM-DD. "
+            "Default: from start of current month or start_date "
+            "in config file if set"
+        ))] = None,
     interval: Annotated[str, typer.Option(
-        help="Show data aggregated per day or per week. Possible values: day|week"  # noqa: W501
+        help=(
+            "Show data aggregated per day or per week. Possible values: "
+            "day|week"
+        )
     )] = 'week',
-    # data_path: Annotated[str, typer.Option(
-    #     help="Path to a file with work data.")] = None,
     csv: Annotated[bool, typer.Option(
-        help="Export data to CSV file in your home directory")] = False,
+        help=(
+            "Export data to CSV file in your home directory. The file's name "
+            "will contain the client's name and the current time"
+        ))] = False,
     # config_path: str | None = None,
 ):
     """
-    Display work time statistics.
+    Aggregate, display and export work time statistics.
     """
 
     config = get_config()
@@ -59,6 +76,11 @@ def run(
     if client in config.abbr:
         client = config.abbr[client]
 
+    if client is None:
+        sys.exit(
+            RED + BACKGROUND_BRIGHT_YELLOW + 'No default client is set in '
+            'the config file, so you have to provide one as argument.' + RESET
+        )
     try:
         data_path = config.clients[client]
     except KeyError:
@@ -84,8 +106,9 @@ def run(
                 + '"minutes_per_week" config value must be set in'
                 + ' ~/.trackie.toml when using interval "week"' + RESET)
         weekly_stats = get_weekly_stats(
-            work_units=work_units,
+            work_units,
             start_date=start_date,
+            minutes_per_week=config.minutes_per_week,
             #  end_date=end_date,
         )
         if csv:
@@ -103,10 +126,11 @@ def run(
                 + '"minutes_per_day" config value must be set in'
                 + ' ~/.trackie.toml when using interval "day"' + RESET)
         daily_stats = get_daily_stats(
-            work_units=work_units,
+            work_units,
             start_date=start_date,
+            minutes_per_day=config.minutes_per_day,
             #  end_date=end_date,
-            excluded_weekdays=[5, 6]
+            excluded_weekdays=[5, 6],
         )
         if csv:
             output_path = output_day_stats_csv(

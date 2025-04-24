@@ -3,6 +3,7 @@ import datetime as dt
 from pathlib import Path
 import re
 import tomllib
+from typing import Any
 
 date_pattern = re.compile(r'''
     ^20[23]\d-  # year
@@ -16,8 +17,8 @@ vim_otl_duration_pattern = re.compile(r'^\t\t\d+')
 
 @dataclass
 class Config:
-    minutes_per_day: int
-    minutes_per_week: int
+    minutes_per_day: int | None
+    minutes_per_week: int | None
     clients: dict[str, str]
     start_date: dt.date | None = None
     abbr: dict[str, str] | None = None
@@ -25,6 +26,7 @@ class Config:
     description_pattern: re.Pattern = vim_otl_description_pattern
     duration_pattern: re.Pattern = vim_otl_duration_pattern
     spaces: int | None = None
+    default: dict[str, Any] | None = None
 
 
 def get_config(path: str | None = None):
@@ -40,12 +42,14 @@ def get_config(path: str | None = None):
     minutes_per_week = cfg['minutes_per_week'] if 'minutes_per_week' in cfg else None  # noqa: W501
     start_date = cfg['start_date'] if 'start_date' in cfg else None
     spaces = cfg['spaces'] if 'spaces' in cfg and cfg['spaces'] else None
+    default = cfg['default'] if 'default' in cfg else None
 
     config = Config(
         minutes_per_day=minutes_per_day,
         minutes_per_week=minutes_per_week,
         start_date=start_date,
         clients=cfg['clients'],
+        default=default,
         abbr=cfg.get('abbr'),
         spaces=spaces,
     )

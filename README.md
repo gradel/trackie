@@ -41,6 +41,9 @@ spaces = 4 # Only when using spaces for tabs!
 [clients]
 employer = "/path/to/foo.otl"
 
+[default]
+client = "employer"
+
 [abbr]
 em = "employer name" # save keystrokes
 ```
@@ -58,8 +61,10 @@ Then create `~/.trackie.toml` file and edit it. Mandatory fields are
 
 Optional fields are:
 
-- start_date - if not set the first day of the current month is used
+- start_date - if not set and the option `start` is not given when running the command the first day of the current month is used
 - spaces - if you want to use spaces for tabs set this to the number of spaces you will insert for one tab
+- table "default" with key "client" - will be used when omitting `client` argument for the command
+- table "abbr" - for using short values to give as `client` argument to the cli command.
 
 Update
 ------
