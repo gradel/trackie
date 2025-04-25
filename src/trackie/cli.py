@@ -92,7 +92,7 @@ def run(
     lines = list(get_lines(Path(data_path)))
 
     try:
-        check_format(lines)
+        check_format(lines, config)
     except TrackieFormatException as e:
         print(RED + BACKGROUND_BRIGHT_YELLOW + f'{e.args[0]}' + RESET)
         sys.exit(-1)

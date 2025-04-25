@@ -1,17 +1,14 @@
 from collections.abc import Generator, Sequence
 import datetime as dt
 
-from trackie.conf import Config, get_config
+from trackie.conf import Config
 
 
 class TrackieFormatException(Exception):
     pass
 
 
-def check_format(lines: Sequence[str], conf: Config | None = None):
-
-    if not conf:
-        config = get_config()
+def check_format(lines: Sequence[str], config: Config):
 
     if not config.date_pattern.match(lines[0]):
         raise TrackieFormatException(

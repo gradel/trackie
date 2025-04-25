@@ -4,7 +4,7 @@ import datetime as dt
 from pathlib import Path
 
 from trackie.utils import daterange, get_week_range
-from trackie.conf import Config, get_config
+from trackie.conf import Config
 from .models import WorkUnit, WeekStat, DayStat
 
 
