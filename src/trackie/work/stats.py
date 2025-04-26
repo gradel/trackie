@@ -1,6 +1,7 @@
 from collections import defaultdict
 from collections.abc import Generator, Sequence
 import datetime as dt
+from decimal import Decimal
 from pathlib import Path
 
 from trackie.utils import daterange, get_week_range
@@ -38,7 +39,7 @@ def get_work_units(
             date = dt.datetime.strptime(date_str, "%Y-%m-%d").date()
             not_in_range = True if date < start_date or date > end_date else False  # noqa: W501
             continue
-        elif config.description_pattern.match(line):
+        elif config.description_pattern.match(line) and not_in_range is False:
             description += f' {line.strip()}'
             continue
         elif config.duration_pattern.match(line) and not_in_range is False:

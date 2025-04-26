@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 import datetime as dt
+from decimal import Decimal
 from pathlib import Path
 import re
 import tomllib
-from typing import Any
+from typing import Literal
 
 date_pattern = re.compile(r'''
     ^20[23]\d-  # year
@@ -20,16 +21,18 @@ spaces_duration_pattern = r'^{}\d+'
 
 @dataclass
 class Config:
-    minutes_per_day: int | None
-    minutes_per_week: int | None
     clients: dict[str, str]
-    start_date: dt.date | None = None
+    hourly_wages: dict[str, dict[str, Decimal]] | None = None
+    mode: Literal["list", "aggregate"] = "list"
+    minutes_per_day: Decimal | None = None
+    minutes_per_week: Decimal | None = None
     abbr: dict[str, str] | None = None
+    start_date: dt.date | None = None
     date_pattern: re.Pattern = date_pattern
     description_pattern: re.Pattern = tabs_description_pattern
     duration_pattern: re.Pattern = tabs_duration_pattern
     spaces: int | None = None
-    default: dict[str, Any] | None = None
+    default: dict[str, dict[str, str]] | None = None
 
 
 def get_config(path: str | None = None):
@@ -41,17 +44,26 @@ def get_config(path: str | None = None):
     with cfg_file.open('rb') as f:
         cfg = tomllib.load(f)
 
+    mode: Literal['list', 'aggregate'] = cfg['mode'] if 'mode' in cfg else 'list'  # noqa: W501
     minutes_per_day = cfg['minutes_per_day'] if 'minutes_per_day' in cfg else None  # noqa: W501
     minutes_per_week = cfg['minutes_per_week'] if 'minutes_per_week' in cfg else None  # noqa: W501
     start_date = cfg['start_date'] if 'start_date' in cfg else None
     spaces = cfg['spaces'] if 'spaces' in cfg and cfg['spaces'] else None
-    default = cfg['default'] if 'default' in cfg else None
+    default = cfg['default']['client'] if 'default' in cfg else None
+    if not default and len(cfg['clients'].keys()) == 1:
+        default = list(cfg['clients'].keys())[0]
+    hourly_wages = cfg['hourly-wages'] if 'hourly-wages' in cfg else None
+    if hourly_wages:
+        for client, wage in hourly_wages.items():
+            hourly_wages[client] = Decimal(wage)
 
     config = Config(
+        mode=mode,
+        clients=cfg['clients'],
+        hourly_wages=hourly_wages,
         minutes_per_day=minutes_per_day,
         minutes_per_week=minutes_per_week,
         start_date=start_date,
-        clients=cfg['clients'],
         default=default,
         abbr=cfg.get('abbr'),
         spaces=spaces,

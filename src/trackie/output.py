@@ -1,10 +1,11 @@
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 import csv
 import datetime as dt
+from decimal import Decimal
 
 from trackie.ansi_colors import GREEN, RED, RESET
 from trackie.utils import daterange_from_week
-from trackie.work.models import DayStat, WeekStat
+from trackie.work.models import DayStat, WeekStat, WorkUnit
 
 from pathlib import Path
 from rich.console import Console
@@ -171,5 +172,62 @@ def output_week_stats_csv(
                 f' {week_stat.minutes} from {minutes_per_week}',
                 f'{"+" if balance > 0 else ""}{balance}',
                 f'{"+" if week_stat.carryover > 0 else ""}{week_stat.carryover}',  # noqa: W501
+            ])
+    return output_path
+
+
+def pretty_print_work_units(
+    work_units,
+    *,
+    client: str,
+    hourly_wage: Decimal,
+) -> None:
+    total_cost = Decimal()
+    total_minutes = 0
+
+    console = Console()
+    table = Table(title=client.capitalize())
+    table.add_column("Work")
+    table.add_column("Duration (minutes)", justify='right')
+    table.add_column("Cost (€)", justify='right')
+
+    for work_unit in work_units:
+        cost = round(Decimal(work_unit.minutes / 60) * hourly_wage, 2)
+        total_cost += cost
+        total_minutes += work_unit.minutes
+        table.add_row(
+            work_unit.description,
+            str(work_unit.minutes),
+            f"{cost:6.2f}",
+        )
+    table.add_row('', '', '')
+    table.add_row(
+        f'Sum ({round(total_minutes / 60, 2)} hours, '
+        f'hourly wage: {hourly_wage}€)',
+        str(total_minutes),
+        f"{total_cost:6.2f}",
+    )
+    console.print(table)
+
+
+def output_work_units_csv(
+    work_units: Generator[WorkUnit],
+    *,
+    client: str,
+    hourly_wage: Decimal,
+) -> Path:
+    output_path = build_output_path(client, 'list')
+
+    with open(output_path, 'w', newline='') as csv_file:
+        writer = csv.writer(
+            csv_file, dialect='excel', quotechar='"', quoting=csv.QUOTE_MINIMAL
+        )
+        writer.writerow(["Work", "Duration (minutes)", "Cost (€)"])
+        for work_unit in work_units:
+            cost = round(Decimal(work_unit.minutes / 60) * hourly_wage, 2)
+            writer.writerow([
+                work_unit.description,
+                str(work_unit.minutes),
+                str(cost)
             ])
     return output_path
