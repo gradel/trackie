@@ -1,11 +1,10 @@
 from collections import defaultdict
 from collections.abc import Generator, Sequence
 import datetime as dt
-from decimal import Decimal
 from pathlib import Path
+import re
 
 from trackie.utils import daterange, get_week_range
-from trackie.conf import Config
 from .models import WorkUnit, WeekStat, DayStat
 
 
@@ -21,8 +20,11 @@ def get_lines(
 def get_work_units(
     lines: Sequence[str],
     client: str,
-    config: Config,
+    *,
     start_date: dt.date,
+    date_pattern: re.Pattern,
+    description_pattern: re.Pattern,
+    duration_pattern: re.Pattern,
     end_date: dt.date | None = None,
 ) -> Generator[WorkUnit]:
 
@@ -34,15 +36,15 @@ def get_work_units(
     description = ''
 
     for line in lines:
-        if config.date_pattern.match(line):
+        if date_pattern.match(line):
             date_str = line.strip()
             date = dt.datetime.strptime(date_str, "%Y-%m-%d").date()
             not_in_range = True if date < start_date or date > end_date else False  # noqa: W501
             continue
-        elif config.description_pattern.match(line) and not_in_range is False:
+        elif description_pattern.match(line) and not_in_range is False:
             description += f' {line.strip()}'
             continue
-        elif config.duration_pattern.match(line) and not_in_range is False:
+        elif duration_pattern.match(line) and not_in_range is False:
             minutes = int(line.strip())
             work_unit = WorkUnit(date, client, minutes, description)
             description = ''

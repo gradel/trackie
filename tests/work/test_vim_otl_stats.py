@@ -1,5 +1,10 @@
 import datetime as dt
 
+from trackie.cli import (
+    date_pattern,
+    tabs_description_pattern,
+    tabs_duration_pattern,
+)
 from trackie.work.stats import get_work_units, get_daily_stats
 
 
@@ -19,20 +24,32 @@ def test_get_daily_stats(single_work_unit):
     assert day_stat.diff == 0
 
 
-def test_empty_file(tab_config):
+def test_empty_file():
     lines = []
     assert list(get_work_units(
-        lines, 'client', tab_config, start_date=dt.date(2000, 1, 1))) == []
+        lines,
+        'client',
+        date_pattern=date_pattern,
+        description_pattern=tabs_description_pattern,
+        duration_pattern=tabs_duration_pattern,
+        start_date=dt.date(2000, 1, 1)
+    )) == []
 
 
-def test_one_work_unit(tab_config):
+def test_one_work_unit():
     lines = [
         '2025-03-01',
         '\tTask 1',
         '\t\t5',
     ]
     work_units = list(get_work_units(
-        lines, 'client', tab_config, start_date=dt.date(2025, 3, 1)))
+        lines,
+        'client',
+        date_pattern=date_pattern,
+        description_pattern=tabs_description_pattern,
+        duration_pattern=tabs_duration_pattern,
+        start_date=dt.date(2025, 3, 1)
+    ))
     assert len(work_units) == 1
     work_unit = work_units[0]
     assert work_unit.date.year == 2025
@@ -40,7 +57,7 @@ def test_one_work_unit(tab_config):
     assert work_unit.date.day == 1
 
 
-def test_four_days_exclude_outer(tab_config):
+def test_four_days_exclude_outer():
     first_date = dt.date(2025, 3, 1)
     day_after_first_date = first_date + dt.timedelta(days=1)
     last_date = dt.date(2025, 3, 15)
@@ -62,7 +79,9 @@ def test_four_days_exclude_outer(tab_config):
     work_units = list(get_work_units(
         lines,
         'client',
-        tab_config,
+        date_pattern=date_pattern,
+        description_pattern=tabs_description_pattern,
+        duration_pattern=tabs_duration_pattern,
         start_date=day_after_first_date,
         end_date=day_before_last_date
     ))

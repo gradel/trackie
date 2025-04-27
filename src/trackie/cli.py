@@ -1,5 +1,7 @@
 import datetime as dt
+from decimal import Decimal
 from pathlib import Path
+import re
 import sys
 from typing_extensions import Annotated
 
@@ -26,6 +28,17 @@ from trackie.work.stats import (
     get_work_units,
 )
 
+date_pattern = re.compile(r'''
+    ^20[23]\d-  # year
+    (01|02|03|04|05|06|07|08|09|10|11|12)-     # month
+    (01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31)$   # day  # noqa: W501
+''', re.VERBOSE)
+
+tabs_description_pattern = re.compile(r'^\t[^\t].*')
+tabs_duration_pattern = re.compile(r'^\t\t\d+')
+
+spaces_description_pattern = r'^{}[^ ].*'
+spaces_duration_pattern = r'^{}\d+'
 
 app = typer.Typer()
 
@@ -38,6 +51,8 @@ def get_default_client() -> str | None:
     config = get_config()
     if config.default and 'client' in config.default:
         return config.default['client']
+    if not config.default and len(config.clients.keys()) == 1:
+        return list(config.clients.keys())[0]
     return None
 
 
@@ -45,7 +60,11 @@ def get_default_client() -> str | None:
 def run(
     client: Annotated[str, typer.Argument(
         default_factory=get_default_client,
-        help="May be omitted if a default client is set in config file")],
+        help=(
+            "May be omitted if a default client is set in config file"
+            " or there is only one client in config's clients table"
+        )
+    )],
     mode: Annotated[str | None, typer.Option(
         help=(
             "List work units or aggregate over interval. Possible values: "
@@ -76,8 +95,21 @@ def run(
 
     config = get_config()
 
-    if not mode:
-        mode = config.mode
+    if client in config.abbr:
+        client = config.abbr[client]
+
+    if not client:
+        error(
+            'No default client is set in the config file, '
+            'Provide one as argument or set one in the config file'
+        )
+
+    mode = mode or config.mode or 'list'
+
+    if config.hourly_wages:
+        # do not use and thereby change already defined variable client here!
+        for _client, wage in config.hourly_wages.items():
+            config.hourly_wages[_client] = Decimal(wage)
 
     if start is None:
         start_date = config.start_date
@@ -93,16 +125,15 @@ def run(
                 'Must match YYYY-MM-DD'
             )
 
-    if client in config.abbr:
-        client = config.abbr[client]
+    if config.spaces:
+        description_pattern = re.compile(
+            spaces_description_pattern.format(' ' * config.spaces))
+        duration_pattern = re.compile(
+            spaces_duration_pattern.format(' ' * config.spaces * 2))
+    else:
+        description_pattern = tabs_description_pattern
+        duration_pattern = tabs_duration_pattern
 
-    if client is None:
-        client = config.default
-        if client is None:
-            error(
-                'No default client is set in the config file, '
-                'Provide one as argument or set one in the config file'
-            )
     try:
         data_path = Path(config.clients[client])
     except KeyError:
@@ -117,12 +148,23 @@ def run(
     lines = list(get_lines(data_path))
 
     try:
-        check_format(lines, config)
+        check_format(
+            lines,
+            date_pattern=date_pattern,
+            description_pattern=description_pattern,
+            duration_pattern=duration_pattern,
+        )
     except TrackieFormatException as e:
         error(f'{e.args[0]}')
 
     work_units = get_work_units(
-        lines, client, config, start_date=start_date)
+        lines,
+        client,
+        start_date=start_date,
+        date_pattern=date_pattern,
+        description_pattern=description_pattern,
+        duration_pattern=duration_pattern,
+    )
 
     if mode == 'aggregate':
         if interval == 'week':
@@ -169,7 +211,6 @@ def run(
                     client, daily_stats, config.minutes_per_day)
 
     elif mode == 'list':
-        work_units = get_work_units(lines, client, config, start_date)
         if not config.hourly_wages or client not in config.hourly_wages:
             error(
                 f'Please provide a hourly wage value for "{client}" in '

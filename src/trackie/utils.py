@@ -1,21 +1,27 @@
 from collections.abc import Generator, Sequence
 import datetime as dt
-
-from trackie.conf import Config
+import re
+from typing import Literal
 
 
 class TrackieFormatException(Exception):
     pass
 
 
-def check_format(lines: Sequence[str], config: Config):
+def check_format(
+    lines: Sequence[str],
+    *,
+    date_pattern: re.Pattern,
+    description_pattern: re.Pattern,
+    duration_pattern: re.Pattern,
+) -> Literal[True]:
 
-    if not config.date_pattern.match(lines[0]):
+    if not date_pattern.match(lines[0]):
         raise TrackieFormatException(
             'Format error on Line 1: '
             'First line must be a date.'
         )
-    if not config.duration_pattern.match(lines[-1]):
+    if not duration_pattern.match(lines[-1]):
         raise TrackieFormatException(
             'Format error on last Line: '
             'Last line must be a duration.'
@@ -24,23 +30,23 @@ def check_format(lines: Sequence[str], config: Config):
     pairs = zip(lines, lines[1:])
 
     for line_number, pair in enumerate(pairs):
-        if config.date_pattern.match(pair[0]):
-            if not config.description_pattern.match(pair[1]):
+        if date_pattern.match(pair[0]):
+            if not description_pattern.match(pair[1]):
                 raise TrackieFormatException(
                     f'Format error on line #{line_number + 1}: '
                     'date is not followed by a description line. '
                     'Hint: description must not start with a number!'
                 )
-        # elif config.description_pattern.match(pair[0]):
-        #     if not config.duration_pattern.match(pair[1]):
+        # elif description_pattern.match(pair[0]):
+        #     if not duration_pattern.match(pair[1]):
         #         raise TrackieFormatException(
         #             f'Format error on line #{line_number + 1}: '
         #             'description not followed by a duration line.'
         #         )
-        elif config.duration_pattern.match(pair[0]):
+        elif duration_pattern.match(pair[0]):
             if not (
-                config.date_pattern.match(pair[1])
-                or config.description_pattern.match(pair[1])
+                date_pattern.match(pair[1])
+                or description_pattern.match(pair[1])
             ):
                 raise TrackieFormatException(
                     f'Format error on line #{line_number + 1}: '
