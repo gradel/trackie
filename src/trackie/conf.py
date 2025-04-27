@@ -11,12 +11,13 @@ class Config:
     clients: dict[str, str] | None
     mode: Literal["list", "aggregate"] | None = None
     start_date: dt.date | None = None
-    hourly_wages: dict[str, dict[str, Decimal]] | None = None
-    minutes_per_day: Decimal | None = None
-    minutes_per_week: Decimal | None = None
+    hourly_wages: dict[str, Decimal] | None = None
+    minutes_per_day: int | None = None
+    minutes_per_week: int | None = None
     abbr: dict[str, str] | None = None
     spaces: int | None = None
     default: dict[str, dict[str, str]] | None = None
+    interval: Literal['day', 'week'] = 'week'
 
 
 def get_config(path: str | None = None):
@@ -38,6 +39,7 @@ def get_config(path: str | None = None):
         abbr=cfg.get('abbr'),
         spaces=cfg.get('spaces'),
         default=cfg.get('default'),
+        interval=cfg.get('interval', 'week')
     )
 
     return config

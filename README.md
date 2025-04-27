@@ -52,6 +52,7 @@ minutes_per_day = 96
 start_date = YYYY-MM-DD
 spaces = 4 # Only when using spaces for tabs!
 mode = "aggregate"  # default is "list"
+interval = "day"  # default is "week"
 
 [clients]
 my-employer = "/path/to/my-employer.otl"
@@ -72,6 +73,7 @@ Mandatory field is
 Optional fields are:
 
 - mode - `list` or `aggregate`, default: `list`
+- interval - when mode is aggregate, `day` or `week`, defaults to `week`
 - table hourly-wages - when using list mode
 - minutes_per_week - when aggrgating over weeks
 - minutes_per_day - when aggregating over days
