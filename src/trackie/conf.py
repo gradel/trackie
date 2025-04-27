@@ -43,3 +43,6 @@ def get_config(path: str | None = None):
     )
 
     return config
+
+
+config = get_config()

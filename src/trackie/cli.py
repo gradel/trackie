@@ -10,7 +10,7 @@ from typing_extensions import Annotated
 import typer
 
 from trackie.ansi_colors import GREEN, RED, RESET, BACKGROUND_BRIGHT_YELLOW
-from trackie.conf import get_config, Config
+from trackie.conf import config, Config
 from trackie.output import (
     output_day_stats_csv,
     output_week_stats_csv,
@@ -196,7 +196,6 @@ def evaluate_input(
 
 
 def get_default_client() -> str | None:
-    config = get_config()
     if config.default and 'client' in config.default:
         return config.default['client']
     if not config.default and len(config.clients.keys()) == 1:
@@ -240,9 +239,6 @@ def run(
     """
     Aggregate, display and export work time statistics.
     """
-
-    config = get_config()
-
     params = evaluate_input(
         client=client,
         mode=mode,
