@@ -4,6 +4,7 @@ import datetime as dt
 from decimal import Decimal
 
 from trackie.ansi_colors import GREEN, RED, RESET
+from trackie.conf import config
 from trackie.utils import daterange_from_week
 from trackie.work.models import DayStat, WeekStat, WorkUnit
 
@@ -184,12 +185,13 @@ def pretty_print_work_units(
 ) -> None:
     total_cost = Decimal()
     total_minutes = 0
+    currency_sign = config.currency_sign or '€'
 
     console = Console()
     table = Table(title=client.capitalize())
     table.add_column("Work")
     table.add_column("Duration (minutes)", justify='right')
-    table.add_column("Cost (€)", justify='right')
+    table.add_column(f"Cost ({currency_sign})", justify='right')
 
     for work_unit in work_units:
         cost = round(Decimal(work_unit.minutes / 60) * hourly_wage, 2)
@@ -203,7 +205,7 @@ def pretty_print_work_units(
     table.add_row('', '', '')
     table.add_row(
         f'Sum ({round(total_minutes / 60, 2)} hours, '
-        f'hourly wage: {hourly_wage}€)',
+        f'hourly wage: {hourly_wage}{currency_sign})',
         str(total_minutes),
         f"{total_cost:6.2f}",
     )
@@ -217,12 +219,14 @@ def output_work_units_csv(
     hourly_wage: Decimal,
 ) -> Path:
     output_path = build_output_path(client, 'list')
+    currency_sign = config.currency_sign or '€'
 
     with open(output_path, 'w', newline='') as csv_file:
         writer = csv.writer(
             csv_file, dialect='excel', quotechar='"', quoting=csv.QUOTE_MINIMAL
         )
-        writer.writerow(["Work", "Duration (minutes)", "Cost (€)"])
+        writer.writerow(
+            ["Work", "Duration (minutes)", f"Cost ({currency_sign})"])
         for work_unit in work_units:
             cost = round(Decimal(work_unit.minutes / 60) * hourly_wage, 2)
             writer.writerow([

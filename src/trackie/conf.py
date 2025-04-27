@@ -18,6 +18,7 @@ class Config:
     spaces: int | None = None
     default: dict[str, dict[str, str]] | None = None
     interval: Literal['day', 'week'] = 'week'
+    currency_sign: str | None = '€'
 
 
 def get_config(path: str | None = None):
@@ -39,7 +40,8 @@ def get_config(path: str | None = None):
         abbr=cfg.get('abbr'),
         spaces=cfg.get('spaces'),
         default=cfg.get('default'),
-        interval=cfg.get('interval', 'week')
+        interval=cfg.get('interval', 'week'),
+        currency_sign=cfg.get('currency_sign', '€')
     )
 
     return config
