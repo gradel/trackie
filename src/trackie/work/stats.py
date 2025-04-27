@@ -29,7 +29,7 @@ def get_work_units(
 ) -> Generator[WorkUnit]:
 
     if not end_date:
-        end_date = dt.date.today() + dt.timedelta(days=1)
+        end_date = dt.date.today()
 
     # date filter flag
     not_in_range = False
@@ -62,7 +62,7 @@ def get_daily_stats(
 ) -> Sequence[DayStat]:
 
     if not end_date:
-        end_date = dt.date.today() + dt.timedelta(days=1)
+        end_date = dt.date.today()
 
     # aggregate work on days
     work_per_day: dict[dt.date, int] = defaultdict(int)
@@ -95,7 +95,7 @@ def get_weekly_stats(
 ) -> Sequence[WeekStat]:
 
     if not end_date:
-        end_date = dt.date.today() + dt.timedelta(days=1)
+        end_date = dt.date.today()
 
     weeks_to_report = get_week_range(start_date, end_date)
 

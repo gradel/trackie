@@ -125,7 +125,7 @@ def pretty_print_week_stats(
 
     for week_stat in week_stats:
         first_day, last_day = daterange_from_week(
-            week_stat.year, week_stat.week, exclude_weekend=True)
+            week_stat.year, week_stat.week, exclude_weekend=False)
 
         signs, balance = get_week_balance(week_stat, minutes_per_week)
 
