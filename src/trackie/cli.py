@@ -44,6 +44,20 @@ spaces_duration_pattern = r'^{}\d+'
 
 app = typer.Typer()
 
+no_default_client_message = (
+    'No default client is set in the config file, '
+    'Provide one as argument or set one in the config file'
+)
+client_not_found_message = (
+    'Error: Client "{}" not found in "clients" table '
+    'in YAML config file.'
+)
+file_does_not_exist_message = 'Error: File "{}" does not exist.'
+invalid_start_date_format_message = (
+    'Format of start date is invalid: {start}. '
+    'Must match YYYY-MM-DD'
+)
+
 
 def error(message):
     sys.exit(RED + BACKGROUND_BRIGHT_YELLOW + message + RESET)
@@ -86,22 +100,16 @@ def evaluate_input(
     # `client` is the only value that gets already handled with a
     # default_factory for the argument in typer
     if not client:
-        error(
-            'No default client is set in the config file, '
-            'Provide one as argument or set one in the config file'
-        )
+        error(no_default_client_message)
 
     if config.clients and client:
         try:
             data_path = Path(config.clients[client])
         except KeyError:
-            error(
-                f'Error: Client "{client}" not found in "clients" table '
-                'in YAML config file.'
-            )
+            error(client_not_found_message.format(client))
 
     if not data_path.exists():
-        error(f'Error: File "{data_path}" does not exist.')
+        error(file_does_not_exist_message.format(data_path))
 
     mode = mode or config.mode or 'list'
 
@@ -120,10 +128,7 @@ def evaluate_input(
         try:
             start_date = dt.datetime.strptime(start, '%Y-%m-%d').date()
         except ValueError:
-            error(
-                f'Format of start date is invalid: {start}. '
-                'Must match YYYY-MM-DD'
-            )
+            error(invalid_start_date_format_message.format(start=start))
 
     if config.spaces:
         description_pattern = re.compile(
