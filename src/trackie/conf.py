@@ -2,8 +2,22 @@ from dataclasses import dataclass
 import datetime as dt
 from decimal import Decimal
 from pathlib import Path
+import re
 import tomllib
 from typing import Literal
+
+
+date_pattern = re.compile(r'''
+    ^20[23]\d-  # year
+    (01|02|03|04|05|06|07|08|09|10|11|12)-     # month
+    (01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31)$   # day  # noqa: W501
+''', re.VERBOSE)
+
+tabs_description_pattern = re.compile(r'^\t[^\t].*')
+tabs_duration_pattern = re.compile(r'^\t\t\d+')
+
+spaces_description_pattern = r'^{}[^ ].*'
+spaces_duration_pattern = r'^{}\d+'
 
 
 @dataclass
@@ -20,6 +34,24 @@ class Config:
     interval: Literal['day', 'week'] = 'week'
     currency_sign: str | None = '€'
     display_hours: bool | None = False
+
+
+@dataclass
+class Params:
+    client: str
+    data_path: Path
+    mode: Literal['list', 'aggregate']
+    start_date: dt.date
+    interval: Literal['day', 'week']
+    csv: bool
+    date_pattern: re.Pattern
+    description_pattern: re.Pattern
+    duration_pattern: re.Pattern
+    minutes_per_day: int | None
+    minutes_per_week: int | None
+    hourly_wages: dict[str, Decimal]
+    display_hours: bool
+    currency_sign: str = '€'
 
 
 def get_config(path: str | None = None):

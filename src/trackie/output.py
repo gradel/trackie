@@ -2,9 +2,10 @@ from collections.abc import Generator, Sequence
 import csv
 import datetime as dt
 from decimal import Decimal
-from typing import Literal
+from typing import cast
 
 from trackie.ansi_colors import GREEN, RED, RESET
+from trackie.conf import Params
 from trackie.conf import config
 from trackie.utils import daterange_from_week
 from trackie.work.models import DayStat, WeekStat, WorkUnit
@@ -14,16 +15,19 @@ from rich.console import Console
 from rich.table import Table
 
 
-def build_output_path(client, mode):
-    output_filename = [client.lower()]
-    output_filename.append(f'-{mode}_statistics-')
+def build_output_path(params: Params) -> Path:
+    output_filename = [params.client.lower()]
+    output_filename.append(f'-{params.mode}_statistics-')
     output_filename.append(dt.datetime.now().strftime('%Y-%m-%d-%H-%M'))
     output_filename.append('.csv')
     output_path = Path.home() / ''.join(output_filename)
     return output_path
 
 
-def get_day_balance(day_stat, minutes_per_day):
+def get_day_balance(
+    day_stat: DayStat,
+    minutes_per_day: int
+) -> tuple[str, int]:
     parts = []
     hours_per_day = minutes_per_day // 10
     if day_stat.minutes >= minutes_per_day:
@@ -40,6 +44,10 @@ def get_day_balance(day_stat, minutes_per_day):
     return ''.join(parts), balance
 
 
+def format_hours(value: int) -> str:
+    return f'{value // 60}:{(value % 60):02d}'
+
+
 def format_stat_unit(
     stat_unit: DayStat | WeekStat,
     unit_minutes: int,
@@ -48,18 +56,15 @@ def format_stat_unit(
     csv: bool,
 ):
     if display_hours:
-        elapsed = (
-            f'{stat_unit.minutes // 60}:{(stat_unit.minutes % 60):02d}'
-        )
+        elapsed = format_hours(stat_unit.minutes)
         if not csv:
-            elapsed += f' from {unit_minutes // 60}:{(unit_minutes % 60):02d}'
+            elapsed += f' from {format_hours(unit_minutes)}'
         balance_str = (
-            f'{"+" if balance > 0 else ""}{balance // 60}:'
-            f'{(balance % 60):02d}'
+            f'{"+" if balance > 0 else ""}{format_hours(balance)}'
         )
         carryover = (
             f'{"+" if stat_unit.carryover > 0 else ""}'
-            f'{stat_unit.carryover // 60}:{(stat_unit.carryover % 60):02d}'
+            + format_hours(stat_unit.carryover)
         )
     else:
         elapsed = f' {stat_unit.minutes} from {unit_minutes}'
@@ -72,22 +77,26 @@ def format_stat_unit(
 
 
 def pretty_print_day_stats(
-    client: str,
     day_stats: Sequence[DayStat],
-    minutes_per_day: int,
-    display_hours: bool,
+    params: Params,
 ) -> None:
     console = Console()
-    table = Table(title=client.capitalize())
+    table = Table(title=params.client.capitalize())
     table.add_column("Day")
     table.add_column("#: regular +-")
-    table.add_column("Hours" if display_hours else "Minutes", justify='right')
+    table.add_column(
+        "Hours" if params.display_hours else "Minutes", justify='right')
     table.add_column("Balance", justify='right')
     table.add_column("Carryover", justify='right')
+
+    # checked in evaluate_input
+    minutes_per_day = cast(int, params.minutes_per_day)
+
     for day_stat in day_stats:
         signs, balance = get_day_balance(day_stat, minutes_per_day)
         elapsed, balance_str, carryover = format_stat_unit(
-            day_stat, minutes_per_day, balance, display_hours, csv=False)
+            day_stat, minutes_per_day, balance, params.display_hours,
+            csv=False)
 
         table.add_row(
             f'{day_stat.date}',
@@ -98,7 +107,7 @@ def pretty_print_day_stats(
         )
     console.print(table)
     carryover = day_stats[-1].carryover
-    if display_hours:
+    if params.display_hours:
         print(
             f'Current Balance: {GREEN if carryover >= 0 else RED}'
             f'{"Plus" if carryover > 0 else "Minus"} '
@@ -111,35 +120,60 @@ def pretty_print_day_stats(
         )
 
 
-def output_day_stats_csv(
-    client: str,
-    day_stats: Sequence[DayStat],
-    minutes_per_day: int,
-    display_hours: bool,
-    mode: Literal['list', 'aggregate'],
+def output_stats_csv(
+    stat_units: Sequence[DayStat] | Sequence[WeekStat],
+    params: Params,
 ) -> Path:
-    output_path = build_output_path(client, mode)
+    output_path = build_output_path(params)
+    head_row = [
+        "Hours" if params.display_hours else "Minutes", "Balance", "Carryover"
+    ]
+    # already checked in evaluate_input
+    minutes_per_day = cast(int, params.minutes_per_day)
 
     with open(output_path, 'w', newline='') as csv_file:
         writer = csv.writer(
             csv_file, dialect='excel', quotechar='"', quoting=csv.QUOTE_MINIMAL
         )
-        writer.writerow(
-            [
-                "Day", "Hours" if display_hours else "Minutes", "Balance",
-                "Carryover"
-            ])
-        for day_stat in day_stats:
-            signs, balance = get_day_balance(day_stat, minutes_per_day)
-            elapsed, balance_str, carryover = format_stat_unit(
-                day_stat, minutes_per_day, balance, display_hours, csv=True)
+        if params.interval == 'day':
+            stat_units = cast(Sequence[DayStat], stat_units)
+            head_row.insert(0, 'Day')
+            for day_stat in stat_units:
+                signs, balance = get_day_balance(
+                    day_stat, minutes_per_day)
+                elapsed, balance_str, carryover = format_stat_unit(
+                    day_stat, minutes_per_day, balance,
+                    params.display_hours, csv=True)
 
-            writer.writerow([
-                f'{day_stat.date}',
-                elapsed,
-                balance_str,
-                carryover,
-            ])
+                writer.writerow([
+                    f'{day_stat.date}',
+                    elapsed,
+                    balance_str,
+                    carryover,
+                ])
+        elif params.interval == 'week':
+            # already checked in evaluate_input
+            minutes_per_week = cast(int, params.minutes_per_week)
+
+            stat_units = cast(Sequence[WeekStat], stat_units)
+            head_row = ['Week', 'Days'] + head_row
+            writer.writerow(head_row)
+            for week_stat in stat_units:
+                first_day, last_day = daterange_from_week(
+                    week_stat.year, week_stat.week, exclude_weekend=False)
+                signs, balance = get_week_balance(
+                    week_stat, params.minutes_per_week)
+                elapsed, balance_str, carryover = format_stat_unit(
+                    week_stat, minutes_per_week, balance,
+                    params.display_hours, csv=True)
+
+                writer.writerow([
+                    week_stat.week,
+                    f'{first_day} - {last_day}',
+                    elapsed,
+                    balance_str,
+                    carryover,
+                ])
     return output_path
 
 
@@ -161,27 +195,29 @@ def get_week_balance(week_stat, minutes_per_week):
 
 
 def pretty_print_week_stats(
-    client: str,
     week_stats: Sequence[WeekStat],
-    minutes_per_week: int,
-    display_hours: bool,
+    params: Params,
 ) -> None:
     console = Console()
-    table = Table(title=client.capitalize())
+    table = Table(title=params.client.capitalize())
     table.add_column("Week")
     table.add_column("#: regular +-")
     table.add_column(
-        "Hours" if display_hours else "Minutes", justify='right')
+        "Hours" if params.display_hours else "Minutes", justify='right')
     table.add_column("Balance", justify='right')
     table.add_column("Carryover", justify='right')
+
+    # already checked in evaluate_input
+    minutes_per_week = cast(int, params.minutes_per_week)
 
     for week_stat in week_stats:
         first_day, last_day = daterange_from_week(
             week_stat.year, week_stat.week, exclude_weekend=False)
 
-        signs, balance = get_week_balance(week_stat, minutes_per_week)
+        signs, balance = get_week_balance(week_stat, params.minutes_per_week)
         elapsed, balance_str, carryover = format_stat_unit(
-            week_stat, minutes_per_week, balance, display_hours, csv=False)
+            week_stat, minutes_per_week, balance, params.display_hours,
+            csv=False)
 
         table.add_row(
             f'Nr.{week_stat.week}, {first_day} - {last_day}',
@@ -192,7 +228,7 @@ def pretty_print_week_stats(
         )
     console.print(table)
     carryover = week_stats[-1].carryover
-    if display_hours:
+    if params.display_hours:
         print(
             f'Current Balance: {GREEN if carryover >= 0 else RED}'
             f'{"Plus" if carryover > 0 else "Minus"} '
@@ -205,58 +241,21 @@ def pretty_print_week_stats(
         )
 
 
-def output_week_stats_csv(
-    client: str,
-    week_stats: Sequence[WeekStat],
-    minutes_per_week: int,
-    display_hours: bool,
-    mode: Literal['list', 'aggregate'],
-) -> Path:
-    output_path = build_output_path(client, mode)
-
-    with open(output_path, 'w', newline='') as csv_file:
-        writer = csv.writer(
-            csv_file, dialect='excel', quotechar='"', quoting=csv.QUOTE_MINIMAL
-        )
-        writer.writerow(
-            [
-                "Week", "Days", "Hours" if display_hours else "Minutes",
-                "Balance", "Carryover",
-            ])
-        for week_stat in week_stats:
-            first_day, last_day = daterange_from_week(
-                week_stat.year, week_stat.week, exclude_weekend=False)
-            signs, balance = get_week_balance(week_stat, minutes_per_week)
-            elapsed, balance_str, carryover = format_stat_unit(
-                week_stat, minutes_per_week, balance, display_hours, csv=True)
-
-            writer.writerow([
-                week_stat.week,
-                f'{first_day} - {last_day}',
-                elapsed,
-                balance_str,
-                carryover,
-            ])
-    return output_path
-
-
 def pretty_print_work_units(
     work_units,
-    *,
-    client: str,
-    hourly_wage: Decimal,
-    display_hours: bool,
+    params: Params,
 ) -> None:
+    hourly_wage = params.hourly_wages[params.client]
     total_cost = Decimal()
     total_minutes = 0
     currency_sign = config.currency_sign or '€'
 
     console = Console()
-    table = Table(title=client.capitalize())
+    table = Table(title=params.client.capitalize())
     table.add_column('Date')
     table.add_column("Work")
     table.add_column(
-        f"Duration ({'hours' if display_hours else 'minutes'})",
+        f"Duration ({'hours' if params.display_hours else 'minutes'})",
         justify='right')
     table.add_column(f"Cost ({currency_sign})", justify='right')
 
@@ -264,9 +263,8 @@ def pretty_print_work_units(
         cost = round(Decimal(work_unit.minutes / 60) * hourly_wage, 2)
         total_cost += cost
         total_minutes += work_unit.minutes
-        if display_hours:
-            duration = (
-                f'{work_unit.minutes // 60}:{work_unit.minutes % 60:02d}')
+        if params.display_hours:
+            duration = format_hours(work_unit.minutes)
         else:
             duration = str(work_unit.minutes)
         table.add_row(
@@ -276,13 +274,14 @@ def pretty_print_work_units(
             f"{cost:6.2f}",
         )
     table.add_row('', '', '')
-    if display_hours:
-        total_duration = f'{total_minutes // 60}:{total_minutes % 60:02d}'
+    if params.display_hours:
+        total_duration = format_hours(total_minutes)
     else:
         total_duration = str(total_minutes)
     table.add_row(
         '',
-        f'Sum ({total_duration} {'hours' if display_hours else 'minutes'}, '
+        f"Sum ({total_duration} "
+        f"{'hours' if params.display_hours else 'minutes'}, "
         f'hourly wage: {hourly_wage}{currency_sign})',
         total_duration,
         f"{total_cost:6.2f}",
@@ -292,14 +291,10 @@ def pretty_print_work_units(
 
 def output_work_units_csv(
     work_units: Generator[WorkUnit],
-    *,
-    client: str,
-    hourly_wage: Decimal,
-    display_hours,
-    mode: Literal['list', 'aggregate'],
+    params,
 ) -> Path:
-    output_path = build_output_path(client, mode)
-    currency_sign = config.currency_sign or '€'
+    output_path = build_output_path(params)
+    hourly_wage = params.hourly_wages[params.client]
 
     with open(output_path, 'w', newline='') as csv_file:
         writer = csv.writer(
@@ -309,12 +304,13 @@ def output_work_units_csv(
             [
                 "Date",
                 "Work",
-                f"Duration ({'hours' if display_hours else 'minutes'})",
-                f"Cost ({currency_sign})"
+                f"Duration ({'hours' if params.display_hours else 'minutes'})",
+                f"Cost ({params.currency_sign})"
             ])
         for work_unit in work_units:
-            cost = round(Decimal(work_unit.minutes / 60) * hourly_wage, 2)
-            if display_hours:
+            cost = round(Decimal(
+                work_unit.minutes / 60) * hourly_wage, 2)
+            if params.display_hours:
                 duration = (
                     f'{work_unit.minutes // 60}:{work_unit.minutes % 60:02d}')
             else:

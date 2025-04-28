@@ -1,11 +1,18 @@
 from collections.abc import Generator, Sequence
 import datetime as dt
 import re
+import sys
 from typing import Literal
+
+from trackie.ansi_colors import RED, RESET, BACKGROUND_BRIGHT_YELLOW
 
 
 class TrackieFormatException(Exception):
     pass
+
+
+def error(message):
+    sys.exit(RED + BACKGROUND_BRIGHT_YELLOW + message + RESET)
 
 
 def check_format(

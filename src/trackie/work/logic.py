@@ -3,8 +3,23 @@ from collections.abc import Generator, Sequence
 import datetime as dt
 from pathlib import Path
 import re
+from typing import cast
 
-from trackie.utils import daterange, get_week_range
+from trackie.ansi_colors import GREEN, RESET
+from trackie.output import (
+    output_stats_csv,
+    output_work_units_csv,
+    pretty_print_day_stats,
+    pretty_print_week_stats,
+    pretty_print_work_units,
+)
+from trackie.utils import (
+    daterange,
+    get_week_range,
+    check_format,
+    error,
+    TrackieFormatException,
+)
 from .models import WorkUnit, WeekStat, DayStat
 
 
@@ -125,3 +140,65 @@ def get_weekly_stats(
             week_stat = WeekStat(year, week, minutes, diff, carryover)
             week_stats.append(week_stat)
     return sorted(week_stats, key=lambda week_stat: week_stat.week)
+
+
+def handle_command(params):
+    lines = list(get_lines(params.data_path))
+
+    try:
+        check_format(
+            lines,
+            date_pattern=params.date_pattern,
+            description_pattern=params.description_pattern,
+            duration_pattern=params.duration_pattern,
+        )
+    except TrackieFormatException as e:
+        error(f'{e.args[0]}')
+
+    work_units = get_work_units(
+        lines,
+        params.client,
+        start_date=params.start_date,
+        date_pattern=params.date_pattern,
+        description_pattern=params.description_pattern,
+        duration_pattern=params.duration_pattern,
+    )
+
+    if params.mode == 'aggregate':
+        if params.interval == 'week':
+            params.minutes_per_week = cast(int, params.minutes_per_week)
+            weekly_stats = get_weekly_stats(
+                work_units,
+                start_date=params.start_date,
+                minutes_per_week=params.minutes_per_week,
+                #  end_date=end_date,
+            )
+            if params.csv:
+                output_path = output_stats_csv(weekly_stats, params)
+                print(GREEN + f'Created CSV file at {output_path}' + RESET)
+                return
+            else:
+                pretty_print_week_stats(weekly_stats, params)
+                return
+
+        elif params.interval == 'day':
+            params.minutes_per_day = cast(int, params.minutes_per_day)
+            daily_stats = get_daily_stats(
+                work_units,
+                start_date=params.start_date,
+                minutes_per_day=params.minutes_per_day,
+                #  end_date=end_date,
+                excluded_weekdays=[5, 6],
+            )
+            if params.csv:
+                output_path = output_stats_csv(daily_stats, params)
+                print(GREEN + f'Created CSV file at {output_path}' + RESET)
+            else:
+                pretty_print_day_stats(daily_stats, params)
+
+    elif params.mode == 'list':
+        if params.csv:
+            output_path = output_work_units_csv(work_units, params)
+            print(GREEN + f'Created CSV file at {output_path}' + RESET)
+        else:
+            pretty_print_work_units(work_units, params)

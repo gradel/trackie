@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from trackie.cli import (
+from trackie.conf import (
     date_pattern,
     spaces_description_pattern,
     spaces_duration_pattern,

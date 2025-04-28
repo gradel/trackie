@@ -1,46 +1,24 @@
-from dataclasses import dataclass
 import datetime as dt
 from decimal import Decimal
 from pathlib import Path
 import re
-import sys
 from typing import cast, Literal
 from typing_extensions import Annotated
 
 import typer
 
-from trackie.ansi_colors import GREEN, RED, RESET, BACKGROUND_BRIGHT_YELLOW
-from trackie.conf import config, Config
-from trackie.output import (
-    output_day_stats_csv,
-    output_week_stats_csv,
-    output_work_units_csv,
-    pretty_print_day_stats,
-    pretty_print_week_stats,
-    pretty_print_work_units,
+from trackie.conf import (
+    config,
+    Config,
+    Params,
+    date_pattern,
+    tabs_description_pattern,
+    tabs_duration_pattern,
+    spaces_description_pattern,
+    spaces_duration_pattern,
 )
-from trackie.utils import (
-    check_format,
-    TrackieFormatException,
-)
-from trackie.work.stats import (
-    get_daily_stats,
-    get_weekly_stats,
-    get_lines,
-    get_work_units,
-)
-
-date_pattern = re.compile(r'''
-    ^20[23]\d-  # year
-    (01|02|03|04|05|06|07|08|09|10|11|12)-     # month
-    (01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31)$   # day  # noqa: W501
-''', re.VERBOSE)
-
-tabs_description_pattern = re.compile(r'^\t[^\t].*')
-tabs_duration_pattern = re.compile(r'^\t\t\d+')
-
-spaces_description_pattern = r'^{}[^ ].*'
-spaces_duration_pattern = r'^{}\d+'
+from trackie.utils import error
+from trackie.work.logic import handle_command
 
 app = typer.Typer()
 
@@ -57,27 +35,6 @@ invalid_start_date_format_message = (
     'Format of start date is invalid: {start}. '
     'Must match YYYY-MM-DD'
 )
-
-
-def error(message):
-    sys.exit(RED + BACKGROUND_BRIGHT_YELLOW + message + RESET)
-
-
-@dataclass
-class Params:
-    client: str
-    data_path: Path
-    mode: Literal['list', 'aggregate']
-    start_date: dt.date
-    interval: Literal['day', 'week']
-    csv: bool
-    date_pattern: re.Pattern
-    description_pattern: re.Pattern
-    duration_pattern: re.Pattern
-    minutes_per_day: int | None
-    minutes_per_week: int | None
-    hourly_wages: dict[str, Decimal]
-    display_hours: bool
 
 
 def evaluate_input(
@@ -251,92 +208,7 @@ def run(
         config=config,
     )
 
-    lines = list(get_lines(params.data_path))
-
-    try:
-        check_format(
-            lines,
-            date_pattern=params.date_pattern,
-            description_pattern=params.description_pattern,
-            duration_pattern=params.duration_pattern,
-        )
-    except TrackieFormatException as e:
-        error(f'{e.args[0]}')
-
-    work_units = get_work_units(
-        lines,
-        params.client,
-        start_date=params.start_date,
-        date_pattern=params.date_pattern,
-        description_pattern=params.description_pattern,
-        duration_pattern=params.duration_pattern,
-    )
-
-    if params.mode == 'aggregate':
-        if params.interval == 'week':
-            params.minutes_per_week = cast(int, params.minutes_per_week)
-            weekly_stats = get_weekly_stats(
-                work_units,
-                start_date=params.start_date,
-                minutes_per_week=params.minutes_per_week,
-                #  end_date=end_date,
-            )
-            if params.csv:
-                output_path = output_week_stats_csv(
-                    params.client,
-                    weekly_stats,
-                    params.minutes_per_week,
-                    params.display_hours,
-                    params.mode,
-                )
-                print(GREEN + f'Created CSV file at {output_path}' + RESET)
-                return
-            else:
-                pretty_print_week_stats(
-                    params.client,
-                    weekly_stats,
-                    params.minutes_per_week,
-                    params.display_hours
-                )
-                return
-
-        elif params.interval == 'day':
-            params.minutes_per_day = cast(int, params.minutes_per_day)
-            daily_stats = get_daily_stats(
-                work_units,
-                start_date=params.start_date,
-                minutes_per_day=params.minutes_per_day,
-                #  end_date=end_date,
-                excluded_weekdays=[5, 6],
-            )
-            if csv:
-                output_path = output_day_stats_csv(
-                    params.client, daily_stats, params.minutes_per_day,
-                    params.display_hours, params.mode)
-                print(GREEN + f'Created CSV file at {output_path}' + RESET)
-            else:
-                pretty_print_day_stats(
-                    params.client, daily_stats, params.minutes_per_day,
-                    params.display_hours)
-
-    elif params.mode == 'list':
-        hourly_wage = params.hourly_wages[client]
-        if params.csv:
-            output_path = output_work_units_csv(
-                work_units,
-                client=params.client,
-                hourly_wage=hourly_wage,
-                display_hours=params.display_hours,
-                mode=params.mode,
-            )
-            print(GREEN + f'Created CSV file at {output_path}' + RESET)
-        else:
-            pretty_print_work_units(
-                work_units,
-                client=params.client,
-                hourly_wage=hourly_wage,
-                display_hours=params.display_hours,
-            )
+    handle_command(params)
 
 
 if __name__ == '__main__':

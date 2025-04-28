@@ -5,7 +5,7 @@ from trackie.cli import (
     tabs_description_pattern,
     tabs_duration_pattern,
 )
-from trackie.work.stats import get_work_units, get_daily_stats
+from trackie.work.logic import get_work_units, get_daily_stats
 
 
 def test_get_daily_stats(single_work_unit):
