@@ -326,7 +326,10 @@ def run(
             print(GREEN + f'Created CSV file at {output_path}' + RESET)
         else:
             pretty_print_work_units(
-                work_units, client=params.client, hourly_wage=hourly_wage
+                work_units,
+                client=params.client,
+                hourly_wage=hourly_wage,
+                display_hours=params.display_hours,
             )
 
 

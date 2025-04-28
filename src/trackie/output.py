@@ -242,6 +242,7 @@ def pretty_print_work_units(
     *,
     client: str,
     hourly_wage: Decimal,
+    display_hours: bool,
 ) -> None:
     total_cost = Decimal()
     total_minutes = 0
@@ -250,16 +251,23 @@ def pretty_print_work_units(
     console = Console()
     table = Table(title=client.capitalize())
     table.add_column("Work")
-    table.add_column("Duration (minutes)", justify='right')
+    table.add_column(
+        f"Duration ({'hours' if display_hours else 'minutes'})",
+        justify='right')
     table.add_column(f"Cost ({currency_sign})", justify='right')
 
     for work_unit in work_units:
         cost = round(Decimal(work_unit.minutes / 60) * hourly_wage, 2)
         total_cost += cost
         total_minutes += work_unit.minutes
+        if display_hours:
+            duration = (
+                f'{work_unit.minutes // 60}:{work_unit.minutes % 60:02d}')
+        else:
+            duration = str(work_unit.minutes)
         table.add_row(
             work_unit.description,
-            str(work_unit.minutes),
+            duration,
             f"{cost:6.2f}",
         )
     table.add_row('', '', '')
