@@ -74,13 +74,15 @@ Optional fields are:
 
 - mode - `list` or `aggregate`, default: `list`
 - interval - when mode is aggregate, `day` or `week`, defaults to `week`
-- table hourly-wages - when using list mode
 - minutes_per_week - when aggrgating over weeks
 - minutes_per_day - when aggregating over days
 - start_date - if not set and the option `start` is not given when running the command the first day of the current month is used
+- currency_sign - default "€"
+- display_hours - display durations in hours (HH:MM), default is true. When false displays in minutes
 - spaces - if you want to use spaces for tabs set this to the number of spaces you will insert for one tab
 - table "default" with key "client" - will be used when omitting `client` argument for the command.
 Note: if there is only one entry in the clients table this client is then taken anyway.
+- table hourly-wages - when using list mode
 - table "abbr" - for using short values to give as `client` argument to the cli command.
 
 Update

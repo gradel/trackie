@@ -39,39 +39,82 @@ def get_day_balance(day_stat, minutes_per_day):
     return ''.join(parts), balance
 
 
+def format_stat_unit(
+    stat_unit: DayStat | WeekStat,
+    unit_minutes: int,
+    balance: int,
+    display_hours: bool,
+    csv: bool,
+):
+    if display_hours:
+        elapsed = (
+            f'{stat_unit.minutes // 60}:{(stat_unit.minutes % 60):02d}'
+        )
+        if not csv:
+            elapsed += f' from {unit_minutes // 60}:{(unit_minutes % 60):02d}'
+        balance_str = (
+            f'{"+" if balance > 0 else ""}{balance // 60}:'
+            f'{(balance % 60):02d}'
+        )
+        carryover = (
+            f'{"+" if stat_unit.carryover > 0 else ""}'
+            f'{stat_unit.carryover // 60}:{(stat_unit.carryover % 60):02d}'
+        )
+    else:
+        elapsed = f' {stat_unit.minutes} from {unit_minutes}'
+        balance_str = f'{"+" if balance > 0 else ""}{balance}'
+        carryover = (
+            f'{"+" if stat_unit.carryover > 0 else ""}'
+            f'{stat_unit.carryover}'
+        )
+    return elapsed, balance_str, carryover
+
+
 def pretty_print_day_stats(
     client: str,
     day_stats: Sequence[DayStat],
-    minutes_per_day: int
+    minutes_per_day: int,
+    display_hours: bool,
 ) -> None:
     console = Console()
     table = Table(title=client.capitalize())
     table.add_column("Day")
     table.add_column("#: regular +-")
-    table.add_column("Minutes", justify='right')
+    table.add_column("Hours" if display_hours else "Minutes", justify='right')
     table.add_column("Balance", justify='right')
     table.add_column("Carryover", justify='right')
     for day_stat in day_stats:
         signs, balance = get_day_balance(day_stat, minutes_per_day)
+        elapsed, balance_str, carryover = format_stat_unit(
+            day_stat, minutes_per_day, balance, display_hours, csv=False)
+
         table.add_row(
             f'{day_stat.date}',
             signs,
-            f' {day_stat.minutes} from {minutes_per_day}',
-            f'{"+" if balance > 0 else ""}{balance}',
-            f'{"+" if day_stat.carryover > 0 else ""}{day_stat.carryover}',
+            elapsed,
+            balance_str,
+            carryover,
         )
     console.print(table)
     carryover = day_stats[-1].carryover
-    print(
-        f'Current Balance: {GREEN if carryover >= 0 else RED}'
-        f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
-    )
+    if display_hours:
+        print(
+            f'Current Balance: {GREEN if carryover >= 0 else RED}'
+            f'{"Plus" if carryover > 0 else "Minus"} '
+            f'{carryover // 60}:{(carryover % 60):02d}{RESET}'
+        )
+    else:
+        print(
+            f'Current Balance: {GREEN if carryover >= 0 else RED}'
+            f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
+        )
 
 
 def output_day_stats_csv(
     client: str,
     day_stats: Sequence[DayStat],
-    minutes_per_day: int
+    minutes_per_day: int,
+    display_hours: bool,
 ) -> Path:
     output_path = build_output_path(client, 'daily')
 
@@ -80,17 +123,21 @@ def output_day_stats_csv(
             csv_file, dialect='excel', quotechar='"', quoting=csv.QUOTE_MINIMAL
         )
         writer.writerow(
-            ["Day", "#: regular +-", "Minutes", "Balance", "Carryover"])
+            [
+                "Day", "Hours" if display_hours else "Minutes", "Balance",
+                "Carryover"
+            ])
         for day_stat in day_stats:
             signs, balance = get_day_balance(day_stat, minutes_per_day)
+            elapsed, balance_str, carryover = format_stat_unit(
+                day_stat, minutes_per_day, balance, display_hours, csv=True)
+
             writer.writerow([
                 f'{day_stat.date}',
-                signs,
-                f' {day_stat.minutes} from {minutes_per_day}',
-                f'{"+" if balance > 0 else ""}{balance}',
-                f'{"+" if day_stat.carryover > 0 else ""}{day_stat.carryover}',
+                elapsed,
+                balance_str,
+                carryover,
             ])
-        # carryover = day_stats[-1].carryover
     return output_path
 
 
@@ -115,12 +162,14 @@ def pretty_print_week_stats(
     client: str,
     week_stats: Sequence[WeekStat],
     minutes_per_week: int,
+    display_hours: bool,
 ) -> None:
     console = Console()
     table = Table(title=client.capitalize())
     table.add_column("Week")
     table.add_column("#: regular +-")
-    table.add_column("Minutes", justify='right')
+    table.add_column(
+        "Hours" if display_hours else "Minutes", justify='right')
     table.add_column("Balance", justify='right')
     table.add_column("Carryover", justify='right')
 
@@ -129,26 +178,36 @@ def pretty_print_week_stats(
             week_stat.year, week_stat.week, exclude_weekend=False)
 
         signs, balance = get_week_balance(week_stat, minutes_per_week)
+        elapsed, balance_str, carryover = format_stat_unit(
+            week_stat, minutes_per_week, balance, display_hours, csv=False)
 
         table.add_row(
             f'Nr.{week_stat.week}, {first_day} - {last_day}',
             signs,
-            f' {week_stat.minutes} from {minutes_per_week}',
-            f'{"+" if balance > 0 else ""}{balance}',
-            f'{"+" if week_stat.carryover > 0 else ""}{week_stat.carryover}',
+            elapsed,
+            balance_str,
+            carryover,
         )
     console.print(table)
     carryover = week_stats[-1].carryover
-    print(
-        f'Current Balance: {GREEN if carryover >= 0 else RED}'
-        f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
-    )
+    if display_hours:
+        print(
+            f'Current Balance: {GREEN if carryover >= 0 else RED}'
+            f'{"Plus" if carryover > 0 else "Minus"} '
+            f'{carryover // 60}:{(carryover % 60):02d}{RESET}'
+        )
+    else:
+        print(
+            f'Current Balance: {GREEN if carryover >= 0 else RED}'
+            f'{"Plus" if carryover > 0 else "Minus"} {carryover}{RESET}'
+        )
 
 
 def output_week_stats_csv(
     client: str,
     week_stats: Sequence[WeekStat],
-    minutes_per_week: int
+    minutes_per_week: int,
+    display_hours: bool,
 ) -> Path:
     output_path = build_output_path(client, 'weekly')
 
@@ -158,21 +217,22 @@ def output_week_stats_csv(
         )
         writer.writerow(
             [
-                "Week", "Days", "#: regular +-", "Minutes", "Balance",
-                "Carryover"
+                "Week", "Days", "Hours" if display_hours else "Minutes",
+                "Balance", "Carryover",
             ])
         for week_stat in week_stats:
             first_day, last_day = daterange_from_week(
-                week_stat.year, week_stat.week, exclude_weekend=True)
+                week_stat.year, week_stat.week, exclude_weekend=False)
             signs, balance = get_week_balance(week_stat, minutes_per_week)
+            elapsed, balance_str, carryover = format_stat_unit(
+                week_stat, minutes_per_week, balance, display_hours, csv=True)
 
             writer.writerow([
                 week_stat.week,
                 f'{first_day} - {last_day}',
-                signs,
-                f' {week_stat.minutes} from {minutes_per_week}',
-                f'{"+" if balance > 0 else ""}{balance}',
-                f'{"+" if week_stat.carryover > 0 else ""}{week_stat.carryover}',  # noqa: W501
+                elapsed,
+                balance_str,
+                carryover,
             ])
     return output_path
 

@@ -77,6 +77,7 @@ class Params:
     minutes_per_day: int | None
     minutes_per_week: int | None
     hourly_wages: dict[str, Decimal]
+    display_hours: bool
 
 
 def evaluate_input(
@@ -177,6 +178,7 @@ def evaluate_input(
     mode = cast(Literal['list', 'aggregate'], mode)
     interval = cast(Literal['day', 'week'], interval)
     start_date = cast(dt.date, start_date)
+    display_hours = cast(bool, config.display_hours)
 
     params = Params(
         client=client,
@@ -191,6 +193,7 @@ def evaluate_input(
         minutes_per_day=config.minutes_per_day,
         minutes_per_week=config.minutes_per_week,
         hourly_wages=hourly_wages,
+        display_hours=display_hours,
     )
     return params
 
@@ -280,12 +283,20 @@ def run(
             )
             if params.csv:
                 output_path = output_week_stats_csv(
-                    params.client, weekly_stats, params.minutes_per_week)
+                    params.client,
+                    weekly_stats,
+                    params.minutes_per_week,
+                    params.display_hours,
+                )
                 print(GREEN + f'Created CSV file at {output_path}' + RESET)
                 return
             else:
                 pretty_print_week_stats(
-                    params.client, weekly_stats, params.minutes_per_week)
+                    params.client,
+                    weekly_stats,
+                    params.minutes_per_week,
+                    params.display_hours
+                )
                 return
 
         elif params.interval == 'day':
@@ -299,11 +310,13 @@ def run(
             )
             if csv:
                 output_path = output_day_stats_csv(
-                    params.client, daily_stats, params.minutes_per_day)
+                    params.client, daily_stats, params.minutes_per_day,
+                    params.display_hours)
                 print(GREEN + f'Created CSV file at {output_path}' + RESET)
             else:
                 pretty_print_day_stats(
-                    params.client, daily_stats, params.minutes_per_day)
+                    params.client, daily_stats, params.minutes_per_day,
+                    params.display_hours)
 
     elif params.mode == 'list':
         hourly_wage = params.hourly_wages[client]
