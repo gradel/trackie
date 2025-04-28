@@ -2,6 +2,7 @@ from collections.abc import Generator, Sequence
 import csv
 import datetime as dt
 from decimal import Decimal
+from typing import Literal
 
 from trackie.ansi_colors import GREEN, RED, RESET
 from trackie.conf import config
@@ -115,8 +116,9 @@ def output_day_stats_csv(
     day_stats: Sequence[DayStat],
     minutes_per_day: int,
     display_hours: bool,
+    mode: Literal['list', 'aggregate'],
 ) -> Path:
-    output_path = build_output_path(client, 'daily')
+    output_path = build_output_path(client, mode)
 
     with open(output_path, 'w', newline='') as csv_file:
         writer = csv.writer(
@@ -208,8 +210,9 @@ def output_week_stats_csv(
     week_stats: Sequence[WeekStat],
     minutes_per_week: int,
     display_hours: bool,
+    mode: Literal['list', 'aggregate'],
 ) -> Path:
-    output_path = build_output_path(client, 'weekly')
+    output_path = build_output_path(client, mode)
 
     with open(output_path, 'w', newline='') as csv_file:
         writer = csv.writer(
@@ -250,6 +253,7 @@ def pretty_print_work_units(
 
     console = Console()
     table = Table(title=client.capitalize())
+    table.add_column('Date')
     table.add_column("Work")
     table.add_column(
         f"Duration ({'hours' if display_hours else 'minutes'})",
@@ -266,15 +270,21 @@ def pretty_print_work_units(
         else:
             duration = str(work_unit.minutes)
         table.add_row(
+            work_unit.date.strftime('%Y-%m-%d'),
             work_unit.description,
             duration,
             f"{cost:6.2f}",
         )
     table.add_row('', '', '')
+    if display_hours:
+        total_duration = f'{total_minutes // 60}:{total_minutes % 60:02d}'
+    else:
+        total_duration = str(total_minutes)
     table.add_row(
-        f'Sum ({round(total_minutes / 60, 2)} hours, '
+        '',
+        f'Sum ({total_duration} {'hours' if display_hours else 'minutes'}, '
         f'hourly wage: {hourly_wage}{currency_sign})',
-        str(total_minutes),
+        total_duration,
         f"{total_cost:6.2f}",
     )
     console.print(table)
@@ -285,8 +295,10 @@ def output_work_units_csv(
     *,
     client: str,
     hourly_wage: Decimal,
+    display_hours,
+    mode: Literal['list', 'aggregate'],
 ) -> Path:
-    output_path = build_output_path(client, 'list')
+    output_path = build_output_path(client, mode)
     currency_sign = config.currency_sign or '€'
 
     with open(output_path, 'w', newline='') as csv_file:
@@ -294,12 +306,23 @@ def output_work_units_csv(
             csv_file, dialect='excel', quotechar='"', quoting=csv.QUOTE_MINIMAL
         )
         writer.writerow(
-            ["Work", "Duration (minutes)", f"Cost ({currency_sign})"])
+            [
+                "Date",
+                "Work",
+                f"Duration ({'hours' if display_hours else 'minutes'})",
+                f"Cost ({currency_sign})"
+            ])
         for work_unit in work_units:
             cost = round(Decimal(work_unit.minutes / 60) * hourly_wage, 2)
+            if display_hours:
+                duration = (
+                    f'{work_unit.minutes // 60}:{work_unit.minutes % 60:02d}')
+            else:
+                duration = str(work_unit.minutes)
             writer.writerow([
+                work_unit.date.strftime('%Y-%m-%d'),
                 work_unit.description,
-                str(work_unit.minutes),
+                duration,
                 str(cost)
             ])
     return output_path

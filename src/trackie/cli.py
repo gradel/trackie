@@ -287,6 +287,7 @@ def run(
                     weekly_stats,
                     params.minutes_per_week,
                     params.display_hours,
+                    params.mode,
                 )
                 print(GREEN + f'Created CSV file at {output_path}' + RESET)
                 return
@@ -311,7 +312,7 @@ def run(
             if csv:
                 output_path = output_day_stats_csv(
                     params.client, daily_stats, params.minutes_per_day,
-                    params.display_hours)
+                    params.display_hours, params.mode)
                 print(GREEN + f'Created CSV file at {output_path}' + RESET)
             else:
                 pretty_print_day_stats(
@@ -322,7 +323,12 @@ def run(
         hourly_wage = params.hourly_wages[client]
         if params.csv:
             output_path = output_work_units_csv(
-                work_units, client=params.client, hourly_wage=hourly_wage)
+                work_units,
+                client=params.client,
+                hourly_wage=hourly_wage,
+                display_hours=params.display_hours,
+                mode=params.mode,
+            )
             print(GREEN + f'Created CSV file at {output_path}' + RESET)
         else:
             pretty_print_work_units(
