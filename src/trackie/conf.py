@@ -33,7 +33,7 @@ class Config:
     default: dict[str, dict[str, str]] | None = None
     interval: Literal['day', 'week'] = 'week'
     currency_sign: str | None = '€'
-    display_hours: bool | None = False
+    display_hours: bool | None = True
 
 
 @dataclass
@@ -49,7 +49,7 @@ class Params:
     duration_pattern: re.Pattern
     minutes_per_day: int | None
     minutes_per_week: int | None
-    hourly_wages: dict[str, Decimal]
+    hourly_wage: Decimal | None
     display_hours: bool
     currency_sign: str = '€'
 

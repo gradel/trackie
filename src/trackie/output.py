@@ -245,7 +245,8 @@ def pretty_print_work_units(
     work_units,
     params: Params,
 ) -> None:
-    hourly_wage = params.hourly_wages[params.client]
+    # checked in evaluate_input
+    hourly_wage = cast(Decimal, params.hourly_wage)
     total_cost = Decimal()
     total_minutes = 0
     currency_sign = config.currency_sign or '€'
@@ -294,7 +295,6 @@ def output_work_units_csv(
     params,
 ) -> Path:
     output_path = build_output_path(params)
-    hourly_wage = params.hourly_wages[params.client]
 
     with open(output_path, 'w', newline='') as csv_file:
         writer = csv.writer(
@@ -309,10 +309,9 @@ def output_work_units_csv(
             ])
         for work_unit in work_units:
             cost = round(Decimal(
-                work_unit.minutes / 60) * hourly_wage, 2)
+                work_unit.minutes / 60) * params.hourly_wage, 2)
             if params.display_hours:
-                duration = (
-                    f'{work_unit.minutes // 60}:{work_unit.minutes % 60:02d}')
+                duration = format_hours(work_unit.minutes)
             else:
                 duration = str(work_unit.minutes)
             writer.writerow([

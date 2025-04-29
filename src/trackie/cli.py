@@ -1,5 +1,5 @@
 import datetime as dt
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import re
 from typing import cast, Literal
@@ -57,8 +57,9 @@ def evaluate_input(
 
     # `client` is the only value that gets already handled with a
     # default_factory for the argument in typer
-    if not client:
+    if client is None:
         error(no_default_client_message)
+    client = cast(str, client)
 
     if config.clients and client:
         try:
@@ -70,12 +71,6 @@ def evaluate_input(
         error(file_does_not_exist_message.format(data_path))
 
     mode = mode or config.mode or 'list'
-
-    hourly_wages = dict()
-    if config.hourly_wages:
-        # do not use and thereby change already defined variable client here!
-        for _client, wage in config.hourly_wages.items():
-            hourly_wages[_client] = Decimal(wage)
 
     if start is None:
         start_date = config.start_date
@@ -119,12 +114,20 @@ def evaluate_input(
             ' config file when using interval "day"'
         )
 
+    if config.hourly_wages:
+        hourly_wage = config.hourly_wages.get(client)
+
+    if hourly_wage:
+        try:
+            hourly_wage = Decimal(hourly_wage)
+        except InvalidOperation:
+            error(
+                'Please provide a numerical value for hourly wages.'
+            )
+
     if (
         mode == 'list'
-        and (
-            not config.hourly_wages
-            or client not in config.hourly_wages
-        )
+        and not hourly_wage
     ):
         error(
             f'Please provide a hourly wage value for "{client}" in '
@@ -149,7 +152,7 @@ def evaluate_input(
         duration_pattern=duration_pattern,
         minutes_per_day=config.minutes_per_day,
         minutes_per_week=config.minutes_per_week,
-        hourly_wages=hourly_wages,
+        hourly_wage=hourly_wage,
         display_hours=display_hours,
     )
     return params
