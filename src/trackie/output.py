@@ -6,7 +6,6 @@ from typing import cast
 
 from trackie.ansi_colors import GREEN, RED, RESET
 from trackie.conf import Params
-from trackie.conf import config
 from trackie.utils import daterange_from_week
 from trackie.work.models import DayStat, WeekStat, WorkUnit
 
@@ -249,7 +248,6 @@ def pretty_print_work_units(
     hourly_wage = cast(Decimal, params.hourly_wage)
     total_cost = Decimal()
     total_minutes = 0
-    currency_sign = config.currency_sign or '€'
 
     console = Console()
     table = Table(title=params.client.capitalize())
@@ -258,7 +256,7 @@ def pretty_print_work_units(
     table.add_column(
         f"Duration ({'hours' if params.display_hours else 'minutes'})",
         justify='right')
-    table.add_column(f"Cost ({currency_sign})", justify='right')
+    table.add_column(f"Cost ({params.currency_sign})", justify='right')
 
     for work_unit in work_units:
         cost = round(Decimal(work_unit.minutes / 60) * hourly_wage, 2)
@@ -283,7 +281,7 @@ def pretty_print_work_units(
         '',
         f"Sum ({total_duration} "
         f"{'hours' if params.display_hours else 'minutes'}, "
-        f'hourly wage: {hourly_wage}{currency_sign})',
+        f'hourly wage: {hourly_wage}{params.currency_sign})',
         total_duration,
         f"{total_cost:6.2f}",
     )
