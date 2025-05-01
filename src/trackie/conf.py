@@ -51,7 +51,7 @@ class Params:
     minutes_per_week: int | None
     hourly_wage: Decimal | None
     display_hours: bool
-    currency_sign: str = '€'
+    currency_sign: str | None = '€'
 
 
 def get_config(path: str | None = None):

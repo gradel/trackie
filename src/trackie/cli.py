@@ -154,6 +154,7 @@ def evaluate_input(
         minutes_per_week=config.minutes_per_week,
         hourly_wage=hourly_wage,
         display_hours=display_hours,
+        currency_sign=config.currency_sign,
     )
     return params
 
