@@ -23,24 +23,24 @@ def build_output_path(params: Params) -> Path:
     return output_path
 
 
-def get_day_balance(
-    day_stat: DayStat,
-    minutes_per_day: int
-) -> tuple[str, int]:
+def get_unit_balance_signs(
+    stat_unit: DayStat | WeekStat,
+    minutes_per_unit: int
+) -> str:
     parts = []
-    hours_per_day = minutes_per_day // 10
-    if day_stat.minutes >= minutes_per_day:
-        parts.append(f'{(minutes_per_day // 10) * "#"}')
-        hours_exceed = (day_stat.minutes - minutes_per_day) // 10
-        if hours_exceed:
-            parts.append(f'{hours_exceed * "+"}')
+    hours_per_unit = minutes_per_unit // 60
+    sign = hours_per_unit / 10
+
+    hours_done = stat_unit.minutes // 60
+    additional_hours = (stat_unit.minutes - minutes_per_unit) // 60
+
+    if stat_unit.minutes >= minutes_per_unit:
+        parts.append(f'{int(hours_per_unit // sign) * "#"}')
+        parts.append(f'{int(additional_hours // sign) * "+"}')
     else:
-        hours_done = day_stat.minutes // 10
-        parts.append(f'{hours_done * "#"}')
-        if hours_done < hours_per_day:
-            parts.append(f'{(hours_per_day - hours_done) * "-"}')
-    balance = day_stat.minutes - minutes_per_day
-    return ''.join(parts), balance
+        parts.append(f'{int(hours_done // sign) * "#"}')
+        parts.append(f'{int((hours_per_unit - hours_done) // sign) * "-"}')
+    return ''.join(parts)
 
 
 def format_hours(value: int) -> str:
@@ -92,7 +92,8 @@ def pretty_print_day_stats(
     minutes_per_day = cast(int, params.minutes_per_day)
 
     for day_stat in day_stats:
-        signs, balance = get_day_balance(day_stat, minutes_per_day)
+        balance = day_stat.minutes - minutes_per_day
+        signs = get_unit_balance_signs(day_stat, minutes_per_day)
         elapsed, balance_str, carryover = format_stat_unit(
             day_stat, minutes_per_day, balance, params.display_hours,
             csv=False)
@@ -138,8 +139,7 @@ def output_stats_csv(
             stat_units = cast(Sequence[DayStat], stat_units)
             head_row.insert(0, 'Day')
             for day_stat in stat_units:
-                signs, balance = get_day_balance(
-                    day_stat, minutes_per_day)
+                balance = day_stat.minutes - minutes_per_day
                 elapsed, balance_str, carryover = format_stat_unit(
                     day_stat, minutes_per_day, balance,
                     params.display_hours, csv=True)
@@ -160,8 +160,7 @@ def output_stats_csv(
             for week_stat in stat_units:
                 first_day, last_day = daterange_from_week(
                     week_stat.year, week_stat.week, exclude_weekend=False)
-                signs, balance = get_week_balance(
-                    week_stat, params.minutes_per_week)
+                balance = week_stat.minutes - minutes_per_week
                 elapsed, balance_str, carryover = format_stat_unit(
                     week_stat, minutes_per_week, balance,
                     params.display_hours, csv=True)
@@ -174,23 +173,6 @@ def output_stats_csv(
                     carryover,
                 ])
     return output_path
-
-
-def get_week_balance(week_stat, minutes_per_week):
-    signs = []
-    hours_per_week = minutes_per_week // 60
-    if week_stat.minutes >= minutes_per_week:
-        signs.append(f'{(minutes_per_week // 60) * "#"}')
-        hours_exceed = (week_stat.minutes - minutes_per_week) // 60
-        if hours_exceed:
-            signs.append(f'{hours_exceed * "+"}')
-    else:
-        hours_done = week_stat.minutes // 60
-        signs.append(f'{hours_done * "#"}')
-        if hours_done < hours_per_week:
-            signs.append(f'{(hours_per_week - hours_done) * "-"}')
-    balance = week_stat.minutes - minutes_per_week
-    return ''.join(signs), balance
 
 
 def pretty_print_week_stats(
@@ -213,7 +195,8 @@ def pretty_print_week_stats(
         first_day, last_day = daterange_from_week(
             week_stat.year, week_stat.week, exclude_weekend=False)
 
-        signs, balance = get_week_balance(week_stat, params.minutes_per_week)
+        balance = week_stat.minutes - minutes_per_week
+        signs = get_unit_balance_signs(week_stat, minutes_per_week)
         elapsed, balance_str, carryover = format_stat_unit(
             week_stat, minutes_per_week, balance, params.display_hours,
             csv=False)

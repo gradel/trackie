@@ -4,8 +4,11 @@ from decimal import Decimal
 from pathlib import Path
 import re
 import tomllib
-from typing import Literal
+from typing import Literal, NewType
 
+
+MinutesPerDay = NewType('MinutesPerDay', int)
+MinutesPerWeek = NewType('MinutesPerWeek', int)
 
 date_pattern = re.compile(r'''
     ^20[23]\d-  # year
@@ -26,8 +29,8 @@ class Config:
     mode: Literal["list", "aggregate"] | None = None
     start_date: dt.date | None = None
     hourly_wages: dict[str, Decimal] | None = None
-    minutes_per_day: int | None = None
-    minutes_per_week: int | None = None
+    minutes_per_day: MinutesPerDay | None = None
+    minutes_per_week: MinutesPerWeek | None = None
     abbr: dict[str, str] | None = None
     spaces: int | None = None
     default: dict[str, dict[str, str]] | None = None
@@ -47,8 +50,8 @@ class Params:
     date_pattern: re.Pattern
     description_pattern: re.Pattern
     duration_pattern: re.Pattern
-    minutes_per_day: int | None
-    minutes_per_week: int | None
+    minutes_per_day: MinutesPerDay | None
+    minutes_per_week: MinutesPerWeek | None
     hourly_wage: Decimal | None
     display_hours: bool
     currency_sign: str | None = '€'
