@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import datetime as dt
 
 
-@dataclass
+@dataclass(frozen=True)
 class WorkUnit:
     date: dt.date
     client: str
@@ -13,7 +13,7 @@ class WorkUnit:
     end: dt.datetime | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class DayStat:
     date: dt.date
     minutes: int
@@ -21,7 +21,7 @@ class DayStat:
     carryover: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class WeekStat:
     year: int
     week: int
