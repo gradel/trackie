@@ -1,8 +1,6 @@
 from collections import defaultdict
 from collections.abc import Generator, Sequence
 import datetime as dt
-from pathlib import Path
-import re
 from typing import cast
 
 from trackie.ansi_colors import GREEN, RESET
@@ -13,58 +11,12 @@ from trackie.output import (
     pretty_print_week_stats,
     pretty_print_work_units,
 )
+from trackie.repositories.base import WorkRepository
 from trackie.utils import (
     daterange,
     get_week_range,
-    check_format,
-    error,
-    TrackieFormatException,
 )
 from .models import WorkUnit, WeekStat, DayStat
-
-
-def get_lines(
-    path: Path,
-) -> Generator[str]:
-    with path.open() as f:
-        for line in f:
-            if line.strip():
-                yield line
-
-
-def get_work_units(
-    lines: Sequence[str],
-    client: str,
-    *,
-    start_date: dt.date,
-    date_pattern: re.Pattern,
-    description_pattern: re.Pattern,
-    duration_pattern: re.Pattern,
-    end_date: dt.date | None = None,
-) -> Generator[WorkUnit]:
-
-    if not end_date:
-        end_date = dt.date.today()
-
-    # date filter flag
-    not_in_range = False
-    description = ''
-
-    for line in lines:
-        if date_pattern.match(line):
-            date_str = line.strip()
-            date = dt.datetime.strptime(date_str, "%Y-%m-%d").date()
-            not_in_range = True if date < start_date or date > end_date else False  # noqa: W501
-            continue
-        elif description_pattern.match(line) and not_in_range is False:
-            description += f' {line.strip()}'
-            continue
-        elif duration_pattern.match(line) and not_in_range is False:
-            minutes = int(line.strip())
-            work_unit = WorkUnit(date, client, minutes, description)
-            description = ''
-            if work_unit.client.lower() == client.lower():
-                yield work_unit
 
 
 def get_daily_stats(
@@ -142,27 +94,9 @@ def get_weekly_stats(
     return sorted(week_stats, key=lambda week_stat: week_stat.week)
 
 
-def handle_command(params):
-    lines = list(get_lines(params.data_path))
+def handle_command(params, repository: WorkRepository):
 
-    try:
-        check_format(
-            lines,
-            date_pattern=params.date_pattern,
-            description_pattern=params.description_pattern,
-            duration_pattern=params.duration_pattern,
-        )
-    except TrackieFormatException as e:
-        error(f'{e.args[0]}')
-
-    work_units = get_work_units(
-        lines,
-        params.client,
-        start_date=params.start_date,
-        date_pattern=params.date_pattern,
-        description_pattern=params.description_pattern,
-        duration_pattern=params.duration_pattern,
-    )
+    work_units = repository.get_work_units(params)
 
     if params.mode == 'aggregate':
         if params.interval == 'week':

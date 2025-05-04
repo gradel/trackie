@@ -37,6 +37,7 @@ class Config:
     interval: Literal['day', 'week'] = 'week'
     currency_sign: str | None = '€'
     display_hours: bool | None = True
+    repository: str = "file_edit"
 
 
 @dataclass
@@ -55,6 +56,7 @@ class Params:
     hourly_wage: Decimal | None
     display_hours: bool
     currency_sign: str | None = '€'
+    end_date: dt.date | None = None
 
 
 def get_config(path: str | None = None):

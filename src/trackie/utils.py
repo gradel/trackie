@@ -23,6 +23,9 @@ def check_format(
     duration_pattern: re.Pattern,
 ) -> Literal[True]:
 
+    if not lines:
+        return True
+
     if not date_pattern.match(lines[0]):
         raise TrackieFormatException(
             'Format error on Line 1: '

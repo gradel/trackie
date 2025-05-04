@@ -17,6 +17,7 @@ from trackie.conf import (
     spaces_description_pattern,
     spaces_duration_pattern,
 )
+from trackie.repositories.file_edit import FileEditRepository
 from trackie.utils import error
 from trackie.work.logic import handle_command
 
@@ -212,7 +213,8 @@ def run(
         config=config,
     )
 
-    handle_command(params)
+    repository = FileEditRepository
+    handle_command(params, repository)
 
 
 if __name__ == '__main__':
